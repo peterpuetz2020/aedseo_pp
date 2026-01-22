@@ -138,7 +138,7 @@ fit_percentiles <- function(
       lnorm = stats::dlnorm(weighted_observations$observation, meanlog =  par[1], sdlog = exp(par[2]), log = TRUE),
       exp = stats::dexp(weighted_observations$observation, rate = exp(par[1]), log = TRUE)
     )
-    return(-sum(log_probability * weighted_observations$weight))
+    -sum(log_probability * weighted_observations$weight)
   }
 
   # Run optimisation for weighted observations
@@ -168,12 +168,12 @@ fit_percentiles <- function(
   )
 
   # Create return fit parameters
-  return(list(
+  list(
     conf_levels = conf_levels,
     values = as.numeric(percentiles),
     par = par_fit[1:2], # Returns NA in second position if optim_method = "exp"
     obj_value = optim_obj$value,
     converged = optim_obj$convergence == 0,
     family = family
-  ))
+  )
 }

@@ -57,23 +57,13 @@ predict.tsd_onset <- function(object, n_step = 3, ...) {
       upper = exp(log(.data$cases) + .data$upper_growth_rate * t)
     )
 
-  # Extract the attributes from the object
-  attributes_object <- attributes(object)
-
-  # Extract the object k, level, and family
-  k <- attributes_object$k
-  level <- attributes_object$level
-  family <- attributes_object$family
-
-  # Turn the results into a class
-  ans <- tibble::new_tibble(
+  # Turn the results into a class with attributes
+  tibble::new_tibble(
     x = res,
     class = "tsd_predict",
-    k = k,
-    level = level,
-    family = family
+    k = attr(object, "k"),
+    level = attr(object, "level"),
+    family = attr(object, "family"),
+    time_interval = attr(object, "time_interval")
   )
-
-  # Return
-  return(ans)
 }

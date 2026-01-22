@@ -50,7 +50,7 @@ increase it could e.g. be due to testing).}
 \item{...}{Arguments passed to \code{seasonal_burden_levels()}, \code{fit_percentiles()} and \code{seasonal_onset()} functions.}
 }
 \value{
-An object containing two lists: onset_output and burden_output:
+An \code{tsd_onset_and_burden} object containing two lists:
 
 onset_output:
 
@@ -87,9 +87,6 @@ If multiple waves is selected the \code{tsd_onset} object will also contain:
 \item 'decrease_counter': How many consecutive time intervals have decreased below the selected burden breakpoint.
 \item 'decrease_value': A numeric specifying the selected burden breakpoint value to fall below for ending the wave.
 }
-
-Attributes added to the \code{tsd_onset} object are:
-\code{burden_level_decrease}, \code{steps_with_decrease} and \code{multiple_waves}.
 
 burden_output:
 
@@ -130,6 +127,9 @@ objective function value from the optimisation. Smaller value equals better opti
 \item 'incidence_denominator': The observations per incidence-denominator.
 \item Attributes: \code{time_interval} and \code{incidence_denominator}.
 }
+
+#' Attributes in the \code{tsd_onset_and_burden} object are:
+\code{burden_level_decrease}, \code{steps_with_decrease} and \code{multiple_waves}.
 }
 \description{
 This function performs automated and early detection of seasonal epidemic onsets and estimates the burden

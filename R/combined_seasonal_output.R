@@ -22,7 +22,7 @@
 #' @param multiple_waves A logical. Should the output contain multiple waves?
 #' @param ... Arguments passed to `seasonal_burden_levels()`, `fit_percentiles()` and `seasonal_onset()` functions.
 #'
-#' @return An object containing two lists: onset_output and burden_output:
+#' @return An `tsd_onset_and_burden` object containing two lists:
 #'
 #' onset_output:
 #' `r rd_seasonal_onset_return`
@@ -37,11 +37,11 @@
 #' - 'decrease_counter': How many consecutive time intervals have decreased below the selected burden breakpoint.
 #' - 'decrease_value': A numeric specifying the selected burden breakpoint value to fall below for ending the wave.
 #'
-#' Attributes added to the `tsd_onset` object are:
-#' `burden_level_decrease`, `steps_with_decrease` and `multiple_waves`.
-#'
 #' burden_output:
 #' `r rd_seasonal_burden_levels_return`
+#'
+#' #' Attributes in the `tsd_onset_and_burden` object are:
+#' `burden_level_decrease`, `steps_with_decrease` and `multiple_waves`.
 #'
 #' @export
 #'
@@ -173,7 +173,7 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
   }
 
   # Add seasonal end variable
-  lag_fns <- setNames(
+  lag_fns <- stats::setNames(
     lapply(seq_len(steps_with_decrease), \(i) \(x) dplyr::lag(x, n = i)),
     paste0("lag", seq_len(steps_with_decrease))
   )
@@ -191,8 +191,8 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
       dec_run = !anyNA(.data$vals) && all(diff(.data$vals) > 0),
       # under decrease_value for the "decreased" obs: obs..lag_{steps-1}
       below_thr = !is.na(.data$decrease_value) &&
-        !anyNA(vals[seq_len(steps_with_decrease)]) &&
-        all(vals[seq_len(steps_with_decrease)] < .data$decrease_value),
+        !anyNA(.data$vals[seq_len(steps_with_decrease)]) &&
+        all(.data$vals[seq_len(steps_with_decrease)] < .data$decrease_value),
 
       end_candidate = (.data$season_id > 0) && .data$dec_run && .data$below_thr
     ) |>
@@ -270,19 +270,15 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
     )
   }
 
-  # Add new attributes to the `tsd_onset` class
-  attr(onset_output, "multiple_waves") <- multiple_waves
-  attr(onset_output, "burden_level_decrease") <- burden_level_decrease
-  attr(onset_output, "steps_with_decrease") <- steps_with_decrease
-
-  # Combine both results in lists
-  seasonal_output <- list(
-    onset_output = onset_output,
-    burden_output = burden_output
+  # Combine both results in lists and assign a class for the combined results
+  structure(
+    list(
+      onset_output  = onset_output,
+      burden_output = burden_output
+    ),
+    multiple_waves = multiple_waves,
+    burden_level_decrease = burden_level_decrease,
+    steps_with_decrease = steps_with_decrease,
+    class = "tsd_onset_and_burden"
   )
-
-  # Assign a class for the combined results
-  class(seasonal_output) <- "tsd_onset_and_burden"
-
-  return(seasonal_output)
 }

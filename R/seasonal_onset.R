@@ -39,7 +39,7 @@
 #'   season_end = 20,
 #'   only_current_season = FALSE
 #' )
-seasonal_onset <- function(                                     # nolint: cyclocomp_linter.
+seasonal_onset <- function(
   tsd,
   k = 5,
   level = 0.95,
@@ -244,23 +244,19 @@ seasonal_onset <- function(                                     # nolint: cycloc
         seasonal_onset = .data$onset_flag == 1 & !duplicated(.data$onset_flag),
         .by = "season"
       ) |>
-      dplyr::select(!"onset_flag")
+      dplyr::select(-"onset_flag")
   }
 
-  # Turn the results into an `tsd_onset` class
-  ans <- tibble::new_tibble(
+  # Create as tibble with an`tsd_onset` class
+  # Add attributes, and keep attributes from the `tsd` class
+  tibble::new_tibble(
     x = res,
     class = "tsd_onset",
     k = k,
     level = level,
     disease_threshold = disease_threshold,
     family = family,
+    time_interval = attr(tsd, "time_interval"),
     incidence_denominator = attr(tsd, "incidence_denominator")
   )
-
-  # Keep attributes from the `tsd` class
-  attr(ans, "time_interval") <- attr(tsd, "time_interval")
-  attr(ans, "incidence_denominator") <- attr(tsd, "incidence_denominator")
-
-  return(ans)
 }

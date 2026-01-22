@@ -110,9 +110,9 @@ fit_growth_rate <- function(
     growth_confint
   )
 
-  return(list(
+  list(
     fit = growth_fit,
     estimate = ans,
     level = level
-  ))
+  )
 }

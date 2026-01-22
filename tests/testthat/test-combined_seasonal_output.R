@@ -265,9 +265,9 @@ test_that("Test that seasonal end feature works as expected", {
   expect_equal(row_nr, row_nr_mult)
 
   # Expect new attributes
-  expect_match(attributes(seasonal_end$onset_output)$burden_level_decrease, "medium")
-  expect_equal(attributes(seasonal_end$onset_output)$steps_with_decrease, 2)
-  expect_equal(attributes(seasonal_end$onset_output)$multiple_waves, FALSE)
+  expect_match(attributes(seasonal_end)$burden_level_decrease, "medium")
+  expect_equal(attributes(seasonal_end)$steps_with_decrease, 2)
+  expect_equal(attributes(seasonal_end)$multiple_waves, FALSE)
 
-  expect_equal(attributes(mult_waves$onset_output)$multiple_waves, TRUE)
+  expect_equal(attributes(mult_waves)$multiple_waves, TRUE)
 })

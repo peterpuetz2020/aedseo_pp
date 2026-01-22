@@ -99,12 +99,10 @@ to_time_series <- function(                                     # nolint: cycloc
   }
 
   # Create the time series data object
-  tsd <- tibble::new_tibble(
+  tibble::new_tibble(
     x = tbl,
     class = "tsd",
     time_interval = time_interval,
     incidence_denominator = incidence_denominator
   )
-
-  return(tsd)
 }

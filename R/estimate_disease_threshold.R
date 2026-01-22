@@ -309,7 +309,11 @@ estimate_disease_threshold <- function(
     onset_output = onset_output
   )
 
-  class(fit_results) <- "tsd_disease_threshold"
-
-  return(fit_results)
+  # Add class, and keep attributes from the `tsd` class
+  structure(
+    fit_results,
+    time_interval = attr(tsd, "time_interval"),
+    incidence_denominator = attr(tsd, "incidence_denominator"),
+    class = c("tsd_disease_threshold", class(fit_results))
+  )
 }

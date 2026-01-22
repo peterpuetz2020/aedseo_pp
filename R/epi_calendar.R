@@ -54,6 +54,4 @@ epi_calendar <- Vectorize(function(date, start = 21, end = 20) {
   } else {
     ans <- paste0(current_year, "/", current_year + 1)
   }
-
-  return(ans)
 })
