@@ -150,6 +150,8 @@ consecutive_gr_warn |>
 By inspecting the output from the above code, the disease-specific threshold is established at `25` cases.
 
 ## Applying the main algorithm
+
+### Seasonal onset and burden levels
 The primary function of the `aedseo` package is the `combined_seasonal_output()` which integrates the `seasonal_onset()` and `seasonal_burden_levels()`
 functions to deliver a comprehensive seasonal analysis.
 Detailed information about each function and their respective arguments can be found in the `vignette("seasonal_onset")` and `vignette("burden_levels")`.
@@ -165,8 +167,21 @@ seasonal_output <- combined_seasonal_output(
 
 The default function estimates onset and burden levels for the current season. If it is desired to see calculations for all previous seasons, the `only_current_season`
 argument should be set to `FALSE`.
+
 *Note: *Burden levels can not be estimated for the first season and needs at least two seasons of data as the estimations are based on data from previous seasons.\\
 
+
+### Seasonal offset and multiple waves
+The `combined_seasonal_output()` function adds a logical `seasonal_offset` column to the output. It combines the onset detection (`tsd_onset`) with the estimated burden breakpoints (`tsd_burden_levels`) to flag the first time point within a season where the season is considered to have ended (i.e., when activity has sufficiently declined after the seasonal onset).
+
+The `burden_level_decrease` argument specifies the burden breakpoint at which activity must be sufficiently low for an offset to be declared. The default is `"low"`, which is a conservative choice: once activity has dropped below the `"low"` level, a subsequent increase is more likely to reflect a new wave rather than continued activity from the same wave.
+
+The `steps_with_decrease` argument specifies how many consecutive time steps the observations must decrease while remaining below the selected burden level before `seasonal_offset` is set to `TRUE`. This is especially useful when the data are noisy, for example due to fluctuations in testing.
+
+*Note:* If `multiple_waves = TRUE`, the output additionally includes wave-level variables (e.g., `wave_start/_end` flags) to allow multiple waves within the same season to be identified. See `vignette("multiple_waves")` for details.
+
+
+### Summary of seasonal onset and burden levels
 The `aedseo` package implements S3 methods including the `plot()`, `predict()` and `summary()` functions specifically designed for objects of the `aedseo` package.
 `predict()` is only relevant for `tsd_onset` objects.
 An example of using the `summary()` S3 method with `tsd_onset` and `tsd_burden_level` objects is shown here.
