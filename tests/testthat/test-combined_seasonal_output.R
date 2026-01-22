@@ -271,3 +271,74 @@ test_that("Test that seasonal end feature works as expected", {
 
   expect_equal(attributes(mult_waves)$multiple_waves, TRUE)
 })
+
+test_that("Test that seasonal end feature works as expected when there are multiple waves", {
+  set.seed(123)
+  tsd_data_monthly <- generate_seasonal_data(
+    years = 14,
+    phase = 3,
+    start_date = as.Date("2020-05-18"),
+    noise_overdispersion = 5,
+    time_interval = "months"
+  )
+
+  tsd_data <- to_time_series(
+    cases = tsd_data_monthly$cases,
+    time = seq.Date(
+      from = as.Date("2020-05-18"),
+      by = "week",
+      length.out = length(tsd_data_monthly$cases)
+    )
+  ) |>
+    dplyr::filter(time < as.Date("2023-05-22"))
+
+  # Settings
+  steps_with_decrease <- 2
+  level <- "low"
+
+  seasonal_end <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease
+  )
+
+  mult_waves <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease,
+    multiple_waves = TRUE
+  )
+
+  n_ends_single <- seasonal_end$onset_output |>
+    dplyr::filter(seasonal_offset == "TRUE") |>
+    dplyr::count() |>
+    dplyr::pull()
+
+  n_ends_mult <- mult_waves$onset_output |>
+    dplyr::filter(wave_ends == "TRUE") |>
+    dplyr::count() |>
+    dplyr::pull()
+
+  # Expect more ends in multiple_waves
+  expect_gt(n_ends_mult, n_ends_single)
+
+  row_nr <- seasonal_end$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(seasonal_offset == "TRUE") |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  # Expect first wave equal to seasonal end
+  row_nr_mult <- mult_waves$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(wave_ends == "TRUE") |>
+    dplyr::filter(dplyr::row_number() == 1) |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  expect_equal(row_nr, row_nr_mult)
+})
