@@ -58,6 +58,7 @@ plot(tsd_data)
 Then we estimate the disease-specific threshold.
 ```{r}
 disease_threshold <- estimate_disease_threshold(tsd_data)
+disease_threshold$disease_threshold
 ```
 
 ### Estimate multiple waves
@@ -78,4 +79,4 @@ multiple_waves <- combined_seasonal_output(
 ```{r, echo = FALSE, dpi=300}
 plot(multiple_waves)
 ```
-From the plot we can observe that season 2023/2024 has five waves.
+From the plot we can observe that season 2023/2024 has five starting waves and four ending waves.

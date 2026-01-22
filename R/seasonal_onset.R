@@ -249,14 +249,18 @@ seasonal_onset <- function(
 
   # Create as tibble with an`tsd_onset` class
   # Add attributes, and keep attributes from the `tsd` class
-  tibble::new_tibble(
+  ans <- tibble::new_tibble(
     x = res,
-    class = "tsd_onset",
     k = k,
     level = level,
     disease_threshold = disease_threshold,
     family = family,
     time_interval = attr(tsd, "time_interval"),
     incidence_denominator = attr(tsd, "incidence_denominator")
+  )
+
+  structure(
+    ans,
+    class = c("tsd_onset", class(ans))
   )
 }

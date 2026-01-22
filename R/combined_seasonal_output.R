@@ -262,6 +262,11 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
         wave_starts = FALSE,
         wave_ends = FALSE,
         decrease_counter = 0
+      ) |>
+      dplyr::left_join(
+        onset_output |>
+          dplyr::select(c("reference_time", "seasonal_offset")),
+        by = "reference_time"
       )
 
     onset_output <- wave_fun(
