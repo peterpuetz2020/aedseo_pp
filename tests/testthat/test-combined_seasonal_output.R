@@ -22,8 +22,8 @@ test_that("Test that onset_output has one more season than burden_output", {
   skip_if_not_installed("withr")
   withr::local_seed(123)
   tsd_data <- generate_seasonal_data(
-    years = 3,
-    start_date = as.Date("2021-01-04")
+    years = 4,
+    start_date = as.Date("2021-05-24")
   )
 
   all_seasons_output <- combined_seasonal_output(tsd_data, only_current_season = FALSE)
@@ -170,7 +170,7 @@ test_that("Test that multiple waves feature works for all seasons in tsd", {
 
   # Settings
   steps_with_decrease <- 2
-  level <- "medium"
+  level <- "low"
 
   mult_waves <- combined_seasonal_output(
     tsd_data,
@@ -206,9 +206,68 @@ test_that("Test that multiple waves feature works for all seasons in tsd", {
     compare_burden_values$decrease_value.x,
     compare_burden_values$decrease_value.y
   )
+})
 
-  expect_equal(
-    compare_burden_values$decrease_level.x,
-    compare_burden_values$decrease_level.y
+test_that("Test that seasonal end feature works as expected", {
+  skip_if_not_installed("withr")
+  withr::local_seed(123)
+  tsd_data <- generate_seasonal_data(
+    years = 5,
+    start_date = as.Date("2021-01-04"),
+    noise_overdispersion = 10,
+    trend_rate = 1.001,
+    phase = 4
   )
+
+  # Settings
+  steps_with_decrease <- 2
+  level <- "medium"
+
+  seasonal_end <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease
+  )
+
+  row_nr <- seasonal_end$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(seasonal_offset == "TRUE") |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  # Expect one seasonal end value
+  expect_length(row_nr, 1)
+
+  # Expect two steps with decrease
+  end_row <- seasonal_end$onset_output[row_nr, ]$cases
+  expect_lt(end_row, seasonal_end$onset_output[row_nr - 1, ]$cases)
+  expect_lt(end_row, seasonal_end$onset_output[row_nr - 2, ]$cases)
+
+  mult_waves <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease,
+    multiple_waves = TRUE
+  )
+
+  # Expect first wave equal to seasonal end
+  row_nr_mult <- mult_waves$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(wave_ends == "TRUE") |>
+    dplyr::filter(dplyr::row_number() == 1) |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  expect_equal(row_nr, row_nr_mult)
+
+  # Expect new attributes
+  expect_match(attributes(seasonal_end$onset_output)$burden_level_decrease, "medium")
+  expect_equal(attributes(seasonal_end$onset_output)$steps_with_decrease, 2)
+  expect_equal(attributes(seasonal_end$onset_output)$multiple_waves, FALSE)
+
+  expect_equal(attributes(mult_waves$onset_output)$multiple_waves, TRUE)
 })

@@ -13,8 +13,8 @@ combined_seasonal_output(
   season_end = season_start - 1,
   only_current_season = TRUE,
   multiple_waves = FALSE,
-  burden_level_decrease = NULL,
-  steps_with_decrease = NULL,
+  burden_level_decrease = c("low", "very low", "medium", "high"),
+  steps_with_decrease = 2,
   ...
 )
 }
@@ -40,13 +40,12 @@ stratify the observations by.}
 \item{multiple_waves}{A logical. Should the output contain multiple waves?}
 
 \item{burden_level_decrease}{A character string specifying the burden breakpoint the observations should decrease
-under before a new increase in observations can call a new wave onset if seasonal onset criteria are met.
-Choose between; "very low", "low", "medium", or "high".}
+under to reach \code{seasonal_offset} or before a new increase in observations can call a new wave onset if
+\code{multiple_waves} are TRUE. Choose between; "very low", "low", "medium", or "high".}
 
 \item{steps_with_decrease}{An integer specifying in how many time steps (days, weeks, months) the decrease
 should be observed under the \code{burden_level_decrease} (if there is a sudden decrease followed by an
-increase it could e.g. be due to testing).
-If multiple_waves are assigned steps_with_decrease defaults to 2.}
+increase it could e.g. be due to testing).}
 
 \item{...}{Arguments passed to \code{seasonal_burden_levels()}, \code{fit_percentiles()} and \code{seasonal_onset()} functions.}
 }
@@ -75,15 +74,22 @@ A \code{tsd_onset} object containing:
 \item Attributes: \code{time_interval} and \code{incidence_denominator}.
 }
 
+As extra the \code{tsd_onset} object will for each season contain a \code{seasonal_offset} variable:
+\itemize{
+\item 'seasonal_offset': Logical. The first detected seasonal offset in the season.
+}
+
 If multiple waves is selected the \code{tsd_onset} object will also contain:
 \itemize{
 \item 'wave_number': The wave number in the time series data.
 \item 'wave_starts': Logical. Did a new wave start?
 \item 'wave_ends': Logical. Did the wave end?
 \item 'decrease_counter': How many consecutive time intervals have decreased below the selected burden breakpoint.
-\item 'decrease_level': A character specifying the selected burden breakpoint to fall below for ending the wave.
-\item 'decrease_value': A numeric specifying the selected burden breakpoint to fall below for ending the wave.
+\item 'decrease_value': A numeric specifying the selected burden breakpoint value to fall below for ending the wave.
 }
+
+Attributes added to the \code{tsd_onset} object are:
+\code{burden_level_decrease}, \code{steps_with_decrease} and \code{multiple_waves}.
 
 burden_output:
 

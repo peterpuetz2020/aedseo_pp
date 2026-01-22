@@ -160,7 +160,7 @@ seasonal_onset <- function(                                     # nolint: cycloc
       converged = FALSE
     )
 
-    # Turn the results into an `seasonal_onset` class
+    # Turn the results into an `tsd_onset` class
     ans <- tibble::new_tibble(
       x = res,
       class = "tsd_onset",
@@ -247,7 +247,7 @@ seasonal_onset <- function(                                     # nolint: cycloc
       dplyr::select(!"onset_flag")
   }
 
-  # Turn the results into an `seasonal_onset` class
+  # Turn the results into an `tsd_onset` class
   ans <- tibble::new_tibble(
     x = res,
     class = "tsd_onset",
