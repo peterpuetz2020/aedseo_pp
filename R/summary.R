@@ -143,6 +143,44 @@ summary.tsd_onset <- function(object, ...) {
       dplyr::pull(.data$lower_growth_rate)
   }
 
+  offset_block <- ""
+  if ("seasonal_offset" %in% names(object) && !is.na(disease_threshold)) {
+    # Extract first seasonal offset if threshold was given
+    seasonal_offset_ref_obs <- object |>
+      dplyr::filter(.data$season == last_season) |>
+      dplyr::filter(.data$seasonal_offset == TRUE)
+
+    seasonal_offset_ref_time <- as.character(
+      seasonal_offset_ref_obs |>
+        dplyr::pull(.data$reference_time)
+    )
+    if (use_incidence) {
+      seasonal_offset_obs <- as.numeric(
+        seasonal_offset_ref_obs |>
+          dplyr::pull(.data$incidence) |>
+          as.numeric()
+      )
+    } else {
+      seasonal_offset_obs <- as.numeric(
+        seasonal_offset_ref_obs |>
+          dplyr::pull(.data$cases)
+      )
+    }
+    seasonal_offset_sum_obs <- as.character(
+      seasonal_offset_ref_obs |>
+        dplyr::pull(.data$average_observations_window)
+    )
+
+    offset_block <- sprintf(
+      "Reference-offset time point (first seasonal offset alarm in season): %s
+      Observations at reference-offset time point: %d
+      Average observations (in k window) at reference-offset time point: %s ",
+      seasonal_offset_ref_time,
+      seasonal_offset_obs,
+      seasonal_offset_sum_obs
+    )
+  }
+
   # Generate the summary message
   if (is.na(disease_threshold)) {
     summary_message <- sprintf(
@@ -196,6 +234,7 @@ summary.tsd_onset <- function(object, ...) {
         Growth rate estimate at reference time point:
           Estimate   Lower (%.1f%%)   Upper (%.1f%%)
             %.3f     %.3f          %.3f
+        %s
         Total number of growth warnings in the series: %d
         Latest growth warning: %s
         Latest average observations warning: %s
@@ -218,6 +257,7 @@ summary.tsd_onset <- function(object, ...) {
       seasonal_onset_gr,
       seasonal_onset_upper_gr,
       seasonal_onset_lower_gr,
+      offset_block,
       sum_of_growth_warnings,
       as.character(latest_growth_warning),
       as.character(latest_average_observations_warning),

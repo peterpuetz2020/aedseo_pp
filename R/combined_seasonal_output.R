@@ -125,7 +125,7 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
   onset_args <- extra_args[names(extra_args) %in% onset_allowed]
 
   # Run the models
-  onset_output <- do.call(
+  onset_output_raw <- do.call(
     seasonal_onset,
     c(list(tsd = tsd, disease_threshold = disease_threshold, family = family,
            season_start = season_start, season_end = season_end, only_current_season = only_current_season),
@@ -141,7 +141,7 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
 
   if (only_current_season) {
     decrease_below <- burden_output$values[[burden_level_decrease]]
-    onset_and_decrease_level <- onset_output |>
+    onset_and_decrease_level <- onset_output_raw |>
       dplyr::mutate(
         decrease_level = burden_level_decrease,
         decrease_value = decrease_below
@@ -159,7 +159,7 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
         ) |>
         dplyr::filter(.data$decrease_level == burden_level_decrease)
     })
-    onset_and_decrease_level <- onset_output |>
+    onset_and_decrease_level <- onset_output_raw |>
       dplyr::left_join(burden_levels, by = "season")
   }
 
@@ -274,6 +274,18 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
       steps_with_decrease = steps_with_decrease
     )
   }
+
+  # Add attributes and class to `tsd_onset` object again
+  onset_output <- structure(
+    onset_output,
+    k = attr(onset_output_raw, "k"),
+    level = attr(onset_output_raw, "level"),
+    disease_threshold = attr(onset_output_raw, "disease_threshold"),
+    family = attr(onset_output_raw, "family"),
+    time_interval = attr(onset_output_raw, "time_interval"),
+    incidence_denominator = attr(onset_output_raw, "incidence_denominator"),
+    class = c("tsd_onset", class(onset_output))
+  )
 
   # Combine both results in lists and assign a class for the combined results
   structure(

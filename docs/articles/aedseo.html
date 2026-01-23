@@ -312,46 +312,32 @@ package. <code><a href="https://rdrr.io/r/stats/predict.html" class="external-li
 <p>Seasonal onset output can be extracted by:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">seasonal_output</span><span class="op">$</span><span class="va">onset_output</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  reference_time           cases           season          population    </span></span>
-<span><span class="co">#&gt;  Min.   :2024-05-26   Min.   :  0.00   Length:51          Mode:logical  </span></span>
-<span><span class="co">#&gt;  1st Qu.:2024-08-21   1st Qu.:  1.00   Class :character   NA's:51       </span></span>
-<span><span class="co">#&gt;  Median :2024-11-17   Median : 41.00   Mode  :character                 </span></span>
-<span><span class="co">#&gt;  Mean   :2024-11-17   Mean   : 95.39                                    </span></span>
-<span><span class="co">#&gt;  3rd Qu.:2025-02-12   3rd Qu.:179.50                                    </span></span>
-<span><span class="co">#&gt;  Max.   :2025-05-11   Max.   :331.00                                    </span></span>
-<span><span class="co">#&gt;                                                                         </span></span>
-<span><span class="co">#&gt;  incidence       growth_rate        lower_growth_rate  upper_growth_rate </span></span>
-<span><span class="co">#&gt;  Mode:logical   Min.   :-1.067391   Min.   :-2.29211   Min.   :-0.32306  </span></span>
-<span><span class="co">#&gt;  NA's:51        1st Qu.:-0.191967   1st Qu.:-0.28219   1st Qu.:-0.08764  </span></span>
-<span><span class="co">#&gt;                 Median :-0.010661   Median :-0.08809   Median : 0.07206  </span></span>
-<span><span class="co">#&gt;                 Mean   : 0.009703   Mean   :-0.19689   Mean   : 0.19668  </span></span>
-<span><span class="co">#&gt;                 3rd Qu.: 0.122213   3rd Qu.: 0.03093   3rd Qu.: 0.34313  </span></span>
-<span><span class="co">#&gt;                 Max.   : 1.398102   Max.   : 1.00483   Max.   : 1.88522  </span></span>
-<span><span class="co">#&gt;                 NA's   :14          NA's   :14         NA's   :14        </span></span>
-<span><span class="co">#&gt;  growth_warning  average_observations_window average_observations_warning</span></span>
-<span><span class="co">#&gt;  Mode :logical   Min.   :  0.00              Mode :logical               </span></span>
-<span><span class="co">#&gt;  FALSE:26        1st Qu.:  1.20              FALSE:21                    </span></span>
-<span><span class="co">#&gt;  TRUE :11        Median : 39.80              TRUE :30                    </span></span>
-<span><span class="co">#&gt;  NA's :14        Mean   : 95.13                                          </span></span>
-<span><span class="co">#&gt;                  3rd Qu.:184.30                                          </span></span>
-<span><span class="co">#&gt;                  Max.   :298.40                                          </span></span>
-<span><span class="co">#&gt;                                                                          </span></span>
-<span><span class="co">#&gt;  seasonal_onset_alarm skipped_window  converged       seasonal_onset </span></span>
-<span><span class="co">#&gt;  Mode :logical        Mode :logical   Mode :logical   Mode :logical  </span></span>
-<span><span class="co">#&gt;  FALSE:42             FALSE:37        FALSE:14        FALSE:50       </span></span>
-<span><span class="co">#&gt;  TRUE :9              TRUE :14        TRUE :37        TRUE :1        </span></span>
-<span><span class="co">#&gt;                                                                      </span></span>
-<span><span class="co">#&gt;                                                                      </span></span>
-<span><span class="co">#&gt;                                                                      </span></span>
-<span><span class="co">#&gt;                                                                      </span></span>
-<span><span class="co">#&gt;  decrease_value  seasonal_offset</span></span>
-<span><span class="co">#&gt;  Min.   :56.19   Mode :logical  </span></span>
-<span><span class="co">#&gt;  1st Qu.:56.19   FALSE:50       </span></span>
-<span><span class="co">#&gt;  Median :56.19   TRUE :1        </span></span>
-<span><span class="co">#&gt;  Mean   :56.19                  </span></span>
-<span><span class="co">#&gt;  3rd Qu.:56.19                  </span></span>
-<span><span class="co">#&gt;  Max.   :56.19                  </span></span>
-<span><span class="co">#&gt; </span></span></code></pre></div>
+<span><span class="co">#&gt; Summary of tsd_onset object with disease_threshold</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;       Model output:</span></span>
+<span><span class="co">#&gt;         Reference time point (first seasonal onset alarm in season): 2024-10-06</span></span>
+<span><span class="co">#&gt;         Observations at reference time point: 48</span></span>
+<span><span class="co">#&gt;         Average observations (in k window) at reference time point: 24.6</span></span>
+<span><span class="co">#&gt;         Growth rate estimate at reference time point:</span></span>
+<span><span class="co">#&gt;           Estimate   Lower (2.5%)   Upper (97.5%)</span></span>
+<span><span class="co">#&gt;             0.584     0.902          0.303</span></span>
+<span><span class="co">#&gt;         Reference-offset time point (first seasonal offset alarm in season): 2025-04-06</span></span>
+<span><span class="co">#&gt;       Observations at reference-offset time point: 24</span></span>
+<span><span class="co">#&gt;       Average observations (in k window) at reference-offset time point: 70.8 </span></span>
+<span><span class="co">#&gt;         Total number of growth warnings in the series: 11</span></span>
+<span><span class="co">#&gt;         Latest growth warning: 2024-12-22</span></span>
+<span><span class="co">#&gt;         Latest average observations warning: 2025-04-27</span></span>
+<span><span class="co">#&gt;         Latest seasonal onset alarm: 2024-12-22</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;       The season for reference time point:</span></span>
+<span><span class="co">#&gt;         2024/2025</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;       Model settings:</span></span>
+<span><span class="co">#&gt;         Called using distributional family: quasipoisson</span></span>
+<span><span class="co">#&gt;         Window size: 5</span></span>
+<span><span class="co">#&gt;         The time interval for the observations: weeks</span></span>
+<span><span class="co">#&gt;         Disease specific threshold: 22</span></span>
+<span><span class="co">#&gt;         Incidence denominator: NA</span></span></code></pre></div>
 <p>Seasonal burden output can be extracted by:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">seasonal_output</span><span class="op">$</span><span class="va">burden_output</span><span class="op">)</span></span>
