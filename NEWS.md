@@ -1,10 +1,10 @@
 # aedseo 1.1.0
 
-# aedseo 1.0.1
-
 ## Features
 * `combined_seasonal_output()` now includes a `seasonal_offset` logical variables in the output that estimates when the season has ended after the first
 `seasonal_onset`. It can be controlled by the inputs: `burden_level_decrease` and `steps_with_decrease` (#93).
+
+# aedseo 1.0.1
 
 ## Fixes
 * `fit_growth_rate()` would incorrectly determine confidence intervals when using ATLAS BLAS/LAPACK (#89).
