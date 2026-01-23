@@ -50,8 +50,8 @@ epi_calendar <- Vectorize(function(date, start = 21, end = 20) {
   current_year <- as.integer(strftime(date, format = "%G"))
 
   if (current_week <= end) {
-    ans <- paste0(current_year - 1, "/", current_year)
+    paste0(current_year - 1, "/", current_year)
   } else {
-    ans <- paste0(current_year, "/", current_year + 1)
+    paste0(current_year, "/", current_year + 1)
   }
 })
