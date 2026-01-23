@@ -20,18 +20,27 @@ library(aedseo)
 
 ## Methodology
 
-Some diseases may exhibit multiple epidemic waves within a season rather than a single peak. This method extends the seasonal onset and burden level framework to identify multiple waves.
+Some diseases may exhibit multiple epidemic waves within a season rather than a single peak.
+This method extends the seasonal onset and burden level framework to identify multiple waves.
 
-Burden levels are used to determine when a wave has ended: after a wave onset, activity must decrease below a chosen burden breakpoint for a specified number of consecutive time steps. Once a wave has ended, a new wave may start if the seasonal onset criteria are met again.
+Burden levels are used to determine when a wave has ended: after a wave onset, activity must
+decrease below a chosen burden breakpoint for a specified number of consecutive time steps.
+Once a wave has ended, a new wave may start if the seasonal onset criteria are met again.
 
 The `combined_seasonal_output()` function implements this functionality via:
 
 - $\text{multiple\_waves}$: Logical. Should multiple waves be estimated within each season?
-- $\text{burden\_level\_decrease}$: Character. The burden breakpoint that observations must fall below before a subsequent increase can be interpreted as the start of a new wave (provided onset criteria are met). Choose one of `"very low"`, `"low"`, `"medium"`, or `"high"`.
-- $\text{steps\_with\_decrease}$: Integer. The number of consecutive time steps (days, weeks, months) with decreasing observations while below `burden_level_decrease` required to declare a wave end and start searching for the next wave onset.
+- $\text{burden\_level\_decrease}$: Character. The burden breakpoint that observations must fall
+below before a subsequent increase can be interpreted as the start of a new wave
+(provided onset criteria are met).
+Choose one of `"very low"`, `"low"`, `"medium"`, or `"high"`.
+- $\text{steps\_with\_decrease}$: Integer. The number of consecutive time steps (days, weeks, months)
+with decreasing observations while below `burden_level_decrease` required to declare a wave end and
+start searching for the next wave onset.
 
 ## Applying the multiple waves algorithm
-As an example we first generate cases in a `tsd` object, with the `generate_seasonal_data()` function. Then we rescale time from monthly to weekly observations to get multiple waves.
+As an example we first generate cases in a `tsd` object, with the `generate_seasonal_data()` function.
+Then we rescale time from monthly to weekly observations to get multiple waves.
 ```{r, dpi=300}
 set.seed(222)
 tsd_data_monthly <- generate_seasonal_data(

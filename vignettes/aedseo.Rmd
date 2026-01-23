@@ -176,13 +176,20 @@ argument should be set to `FALSE`.
 
 
 ### Seasonal offset and multiple waves
-The `combined_seasonal_output()` function adds a logical `seasonal_offset` column to the output. It combines the onset detection (`tsd_onset`) with the estimated burden breakpoints (`tsd_burden_levels`) to flag the first time point within a season where the season is considered to have ended (i.e., when activity has sufficiently declined after the seasonal onset).
+The `combined_seasonal_output()` function adds a logical `seasonal_offset` column to the output. It combines the onset
+detection (`tsd_onset`) with the estimated burden breakpoints (`tsd_burden_levels`) to flag the first time point within
+a season where the season is considered to have ended (i.e., when activity has sufficiently declined after the seasonal onset).
 
-The `burden_level_decrease` argument specifies the burden breakpoint at which activity must be sufficiently low for an offset to be declared. The default is `"low"`, which is a conservative choice: once activity has dropped below the `"low"` breakpoint, a subsequent increase is more likely to reflect a new wave rather than continued activity from the same wave.
+The `burden_level_decrease` argument specifies the burden breakpoint at which activity must be sufficiently low for an
+offset to be declared. The default is `"low"`, which is a conservative choice: once activity has dropped below the `"low"`
+breakpoint, a subsequent increase is more likely to reflect a new wave rather than continued activity from the same wave.
 
-The `steps_with_decrease` argument specifies how many consecutive time steps the observations must decrease while remaining below the selected burden level before `seasonal_offset` is set to `TRUE`. This is especially useful when the data are noisy, for example due to fluctuations in testing.
+The `steps_with_decrease` argument specifies how many consecutive time steps the observations must decrease while remaining
+below the selected burden level before `seasonal_offset` is set to `TRUE`. This is especially useful when the data are noisy,
+for example due to fluctuations in testing.
 
-*Note:* If `multiple_waves = TRUE`, the output additionally includes wave-level variables (e.g., `wave_start/_end` flags) to allow multiple waves within the same season to be identified. See `vignette("multiple_waves")` for details.
+*Note:* If `multiple_waves = TRUE`, the output additionally includes wave-level variables (e.g., `wave_start/_end` flags) to
+allow multiple waves within the same season to be identified. See `vignette("multiple_waves")` for details.
 
 
 ### Summary of seasonal onset and burden levels
