@@ -36,7 +36,7 @@ autoplot(object, ...)
   object,
   y_lower_bound = 5,
   factor_to_max = 2,
-  disease_color = "royalblue",
+  disease_color = "#009DD1",
   season_start = 21,
   season_end = season_start - 1,
   time_interval_step = "3 weeks",
@@ -45,8 +45,11 @@ autoplot(object, ...)
   text_family = "sans",
   line_color = "black",
   line_type = "solid",
-  vline_color = "red",
-  vline_linetype = "dashed",
+  vline_color_onset = "#bf212f",
+  vline_linetype_onset = "dashed",
+  vline_color_offset = "#006f3c",
+  vline_linetype_offset = "dotted",
+  line_width = 1,
   y_scale_labels = scales::label_comma(big.mark = ".", decimal.mark = ","),
   theme_custom = ggplot2::theme_bw(),
   legend_position = "right",
@@ -103,9 +106,13 @@ Must match the number of levels.}
 
 \item{line_type}{A character specifying the line type for observation line.}
 
-\item{vline_color}{A character specifying the color of the vertical outbreak start lines.}
+\item{vline_color_onset}{A character specifying the color of the vertical seasonal onset line.}
 
-\item{vline_linetype}{A character specifying the line type for outbreak start lines.}
+\item{vline_linetype_onset}{A character specifying the line type for the seasonal onset line.}
+
+\item{vline_color_offset}{A character specifying the color of the vertical seasonal offset line.}
+
+\item{vline_linetype_offset}{A character specifying the line type for the seasonal offset line.}
 
 \item{y_scale_labels}{A function to format y-axis labels.}
 
@@ -146,7 +153,7 @@ The transparency of the points indicates whether a growth warning condition is m
 \code{autoplot(tsd_onset_and_burden)}
 \itemize{
 \item Generates a line connecting the observations in the current season, along with colored regions
-representing different burdens levels and a vertical line indicating outbreak start.
+representing different burdens levels and a vertical line indicating seasonal onset.
 The y-axis is scaled with \code{ggplot2::scale_y_log10} to give better visualisation of the burden levels.
 }
 }

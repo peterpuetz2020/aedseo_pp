@@ -21,7 +21,7 @@ autoplot <- function(object, ...) {
 #'
 #' `autoplot(tsd_onset_and_burden)`
 #'  - Generates a line connecting the observations in the current season, along with colored regions
-#'  representing different burdens levels and a vertical line indicating outbreak start.
+#'  representing different burdens levels and a vertical line indicating seasonal onset.
 #'  The y-axis is scaled with `ggplot2::scale_y_log10` to give better visualisation of the burden levels.
 
 #' @param object A `tsd` object
@@ -260,8 +260,10 @@ autoplot.tsd_onset <- function(
 #' @param text_family `r rd_text_family`
 #' @param line_color A character specifying the color of the line connecting observations.
 #' @param line_type A character specifying the line type for observation line.
-#' @param vline_color A character specifying the color of the vertical outbreak start lines.
-#' @param vline_linetype A character specifying the line type for outbreak start lines.
+#' @param vline_color_onset A character specifying the color of the vertical seasonal onset line.
+#' @param vline_linetype_onset A character specifying the line type for the seasonal onset line.
+#' @param vline_color_offset A character specifying the color of the vertical seasonal offset line.
+#' @param vline_linetype_offset A character specifying the line type for the seasonal offset line.
 #' @param y_scale_labels A function to format y-axis labels.
 #' @param theme_custom A function with a ggplot2 theme, specifying the theme to apply to the plot.
 #' @param legend_position `r rd_legend_position`
@@ -290,7 +292,7 @@ autoplot.tsd_onset_and_burden <- function(
   object,
   y_lower_bound = 5,
   factor_to_max = 2,
-  disease_color = "royalblue",
+  disease_color = "#009DD1",
   season_start = 21,
   season_end = season_start - 1,
   time_interval_step = "3 weeks",
@@ -299,8 +301,11 @@ autoplot.tsd_onset_and_burden <- function(
   text_family = "sans",
   line_color = "black",
   line_type = "solid",
-  vline_color = "red",
-  vline_linetype = "dashed",
+  vline_color_onset = "#bf212f",
+  vline_linetype_onset = "dashed",
+  vline_color_offset = "#006f3c",
+  vline_linetype_offset = "dotted",
+  line_width = 1,
   y_scale_labels = scales::label_comma(big.mark = ".", decimal.mark = ","),
   theme_custom = ggplot2::theme_bw(),
   legend_position = "right",
@@ -338,8 +343,11 @@ autoplot.tsd_onset_and_burden <- function(
   # Add multiple wave onset if present in data frame
   if ("wave_number" %in% names(virus_df)) {
     virus_df <- virus_df |>
-      dplyr::select(-"seasonal_onset") |>
-      dplyr::rename(seasonal_onset = "wave_starts")
+      dplyr::select(-c("seasonal_onset", "seasonal_offset")) |>
+      dplyr::rename(
+        seasonal_onset = "wave_starts",
+        seasonal_offset = "wave_ends"
+      )
   }
 
   # Current week
@@ -413,8 +421,16 @@ autoplot.tsd_onset_and_burden <- function(
     ggplot2::geom_vline(
       data = virus_df |> dplyr::filter(.data$seasonal_onset == TRUE),
       ggplot2::aes(xintercept = .data$reference_time,
-                   color = "Outbreak"),
-      linetype = vline_linetype,
+                   color = "Seasonal onset"),
+      linetype = vline_linetype_onset,
+      linewidth = line_width
+    ) +
+    ggplot2::geom_vline(
+      data = virus_df |> dplyr::filter(.data$seasonal_offset == TRUE),
+      ggplot2::aes(xintercept = .data$reference_time,
+                   color = "Seasonal offset"),
+      linetype = vline_linetype_offset,
+      linewidth = line_width
     ) +
     ggplot2::scale_y_log10(
       expand = ggplot2::expansion(mult = 0, add = 0),
@@ -428,8 +444,10 @@ autoplot.tsd_onset_and_burden <- function(
     ) +
     ggplot2::scale_color_manual(
       name = "",
+      breaks = c("Seasonal onset", "Seasonal offset"),
       values = c(
-        "Outbreak" = vline_color
+        "Seasonal onset" = vline_color_onset,
+        "Seasonal offset" = vline_color_offset
       )
     ) +
     ggplot2::labs(y = y_label) +
@@ -446,6 +464,13 @@ autoplot.tsd_onset_and_burden <- function(
       start_date = min(virus_df$reference_time),
       end_date = date_last_week_in_season,
       time_interval_step = time_interval_step
+    ) +
+    ggplot2::guides(
+      linetype = ggplot2::guide_legend(order = 1),
+      colour   = ggplot2::guide_legend(order = 2, keyheight = ggplot2::unit(10, "mm"))
+    ) +
+    ggplot2::theme(
+      legend.key.spacing.y  = grid::unit(4, "mm")
     )
 }
 #' Autoplot a `tsd_growth_warning` object

@@ -13,31 +13,35 @@
 #' @param disease_threshold `r rd_disease_threshold(usage = "combined")`
 #' @param family `r rd_family(usage = "combined")`
 #' @param family_quant A character string specifying the family for modeling burden levels.
-#' @param multiple_waves A logical. Should the output contain multiple waves?
 #' @param burden_level_decrease A character string specifying the burden breakpoint the observations should decrease
-#' under before a new increase in observations can call a new wave onset if seasonal onset criteria are met.
-#' Choose between; "very low", "low", "medium", or "high".
+#' under to reach `seasonal_offset` or before a new increase in observations can call a new wave onset if
+#' `multiple_waves` are TRUE. Choose between; "very low", "low", "medium", or "high".
 #' @param steps_with_decrease An integer specifying in how many time steps (days, weeks, months) the decrease
 #' should be observed under the `burden_level_decrease` (if there is a sudden decrease followed by an
 #' increase it could e.g. be due to testing).
-#' If multiple_waves are assigned steps_with_decrease defaults to 2.
+#' @param multiple_waves A logical. Should the output contain multiple waves?
 #' @param ... Arguments passed to `seasonal_burden_levels()`, `fit_percentiles()` and `seasonal_onset()` functions.
 #'
-#' @return An object containing two lists: onset_output and burden_output:
+#' @return An `tsd_onset_and_burden` object containing two lists:
 #'
 #' onset_output:
 #' `r rd_seasonal_onset_return`
+#'
+#' As extra the `tsd_onset` object will for each season contain a `seasonal_offset` variable:
+#' - 'seasonal_offset': Logical. The first detected seasonal offset in the season.
 #'
 #' If multiple waves is selected the `tsd_onset` object will also contain:
 #' - 'wave_number': The wave number in the time series data.
 #' - 'wave_starts': Logical. Did a new wave start?
 #' - 'wave_ends': Logical. Did the wave end?
 #' - 'decrease_counter': How many consecutive time intervals have decreased below the selected burden breakpoint.
-#' - 'decrease_level': A character specifying the selected burden breakpoint to fall below for ending the wave.
-#' - 'decrease_value': A numeric specifying the selected burden breakpoint to fall below for ending the wave.
+#' - 'decrease_value': A numeric specifying the selected burden breakpoint value to fall below for ending the wave.
 #'
 #' burden_output:
 #' `r rd_seasonal_burden_levels_return`
+#'
+#' #' Attributes in the `tsd_onset_and_burden` object are:
+#' `burden_level_decrease`, `steps_with_decrease` and `multiple_waves`.
 #'
 #' @export
 #'
@@ -94,32 +98,20 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
   season_end = season_start - 1,
   only_current_season = TRUE,
   multiple_waves = FALSE,
-  burden_level_decrease = NULL,
-  steps_with_decrease = NULL,
+  burden_level_decrease = c(
+    "low",
+    "very low",
+    "medium",
+    "high"
+  ),
+  steps_with_decrease = 2,
   ...
 ) {
   coll <- checkmate::makeAssertCollection()
   checkmate::assert_logical(multiple_waves, add = coll)
-  checkmate::assert_character(burden_level_decrease, null.ok = TRUE, add = coll)
-  checkmate::assert_choice(burden_level_decrease,
-                           choices = c("very low", "low", "medium", "high"),
-                           null.ok = TRUE,
-                           add = coll)
-  checkmate::assert_integerish(steps_with_decrease, lower = 1, null.ok = TRUE, add = coll)
-  if (!multiple_waves && !is.null(burden_level_decrease)) {
-    coll$push("burden_level_decrease is not used unless multiple_waves is TRUE.")
-  }
-  if (!multiple_waves && !is.null(steps_with_decrease)) {
-    coll$push("steps_with_decrease is not used unless multiple_waves is TRUE.")
-  }
-  if (multiple_waves && is.null(burden_level_decrease)) {
-    coll$push("burden_level_decrease must be assigned if multiple_waves is TRUE")
-  }
-  if (multiple_waves && is.null(steps_with_decrease)) {
-    warning("steps_with_decrease is by default set to 2")
-    steps_with_decrease <- 2L
-  }
+  checkmate::assert_integerish(steps_with_decrease, lower = 1, add = coll)
   checkmate::reportAssertions(coll)
+  burden_level_decrease <- rlang::arg_match(burden_level_decrease)
 
   # Capture all extra arguments
   extra_args <- list(...)
@@ -133,7 +125,7 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
   onset_args <- extra_args[names(extra_args) %in% onset_allowed]
 
   # Run the models
-  onset_output <- do.call(
+  onset_output_raw <- do.call(
     seasonal_onset,
     c(list(tsd = tsd, disease_threshold = disease_threshold, family = family,
            season_start = season_start, season_end = season_end, only_current_season = only_current_season),
@@ -147,20 +139,78 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
       burden_args)
   )
 
+  if (only_current_season) {
+    decrease_below <- burden_output$values[[burden_level_decrease]]
+    onset_and_decrease_level <- onset_output_raw |>
+      dplyr::mutate(
+        decrease_level = burden_level_decrease,
+        decrease_value = decrease_below
+      )
+  } else {
+    burden_levels <- purrr::map_dfr(burden_output, ~ {
+      tibble::tibble(
+        season = .x$season,
+        values = .x$values
+      ) |>
+        tidyr::unnest_longer(
+          col = values,
+          indices_to = "decrease_level",
+          values_to = "decrease_value"
+        ) |>
+        dplyr::filter(.data$decrease_level == burden_level_decrease)
+    })
+    onset_and_decrease_level <- onset_output_raw |>
+      dplyr::left_join(burden_levels, by = "season")
+  }
+
+  # Define observation based on input data
+  if (!all(is.na(onset_and_decrease_level$incidence))) {
+    onset_and_decrease_level <- onset_and_decrease_level |>
+      dplyr::mutate(observation = .data$incidence)
+  } else {
+    onset_and_decrease_level <- onset_and_decrease_level |>
+      dplyr::mutate(observation = .data$cases)
+  }
+
+  # Add seasonal end variable
+  lag_fns <- stats::setNames(
+    lapply(seq_len(steps_with_decrease), \(i) \(x) dplyr::lag(x, n = i)),
+    paste0("lag", seq_len(steps_with_decrease))
+  )
+  onset_output <- onset_and_decrease_level |>
+    dplyr::mutate(
+      season_id = cumsum(tidyr::replace_na(.data$seasonal_onset, FALSE))
+    ) |>
+    dplyr::mutate(
+      dplyr::across(tidyr::all_of("observation"), .fns = lag_fns, .names = "{.col}_{.fn}")
+    ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      vals = list(c(.data$observation, dplyr::c_across(dplyr::starts_with("observation_lag")))),
+      # obs < lag1 < lag2 < ... < lag_steps  (continouse decrease)
+      dec_run = !anyNA(.data$vals) && all(diff(.data$vals) > 0),
+      # under decrease_value for the "decreased" obs: obs..lag_{steps-1}
+      below_thr = !is.na(.data$decrease_value) &&
+        !anyNA(.data$vals[seq_len(steps_with_decrease)]) &&
+        all(.data$vals[seq_len(steps_with_decrease)] < .data$decrease_value),
+
+      end_candidate = (.data$season_id > 0) && .data$dec_run && .data$below_thr
+    ) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(
+      seasonal_offset = .data$end_candidate & (cumsum(.data$end_candidate) == 1),
+      .by = "season_id"
+    ) |>
+    dplyr::select(
+      -c("season_id", "vals", "dec_run", "below_thr", "end_candidate", "decrease_level"),
+      -dplyr::starts_with("observation")
+    )
+
   # Add multiple waves if assigned in input
   if (multiple_waves) {
 
     # Iterate over onset_output
     wave_fun <- function(onset_data, steps_with_decrease) {
-
-      # Define observation based on input data
-      if (!is.na(all(onset_data$incidence))) {
-        onset_data <- onset_data |>
-          dplyr::mutate(observation = .data$incidence)
-      } else {
-        onset_data <- onset_data |>
-          dplyr::mutate(observation = .data$cases)
-      }
 
       # Initialise
       in_wave <- FALSE
@@ -182,72 +232,70 @@ combined_seasonal_output <- function(         # nolint: cyclocomp_linter.
         # Check if the current observation is decreasing compared to the previous row
         # and falls below the decrease_below threshold.
         prev_obs <- if (i > 1) onset_data$observation[i - 1] else NA_real_
-        if (!is.na(prev_obs) && onset_data$observation[i] < prev_obs &&
-              onset_data$observation[i] < onset_data$decrease_value[i]) {
+        if (
+          !is.na(prev_obs) &&
+            !is.na(onset_data$decrease_value[i]) &&
+            onset_data$observation[i] < prev_obs &&
+            onset_data$observation[i] < onset_data$decrease_value[i]
+        ) {
           onset_data$decrease_counter[i] <- onset_data$decrease_counter[i - 1] + 1
+        } else {
+          onset_data$decrease_counter[i] <- 0
         }
         # If the number of consecutive decreasing steps reaches `steps_with_decrease`, end the current wave.
-        if (in_wave && onset_data$decrease_counter[i] >= steps_with_decrease) {
+        if (
+          in_wave &&
+            onset_data$decrease_counter[i] >= steps_with_decrease
+        ) {
           onset_data$wave_ends[i] <- TRUE
           in_wave <- FALSE
         }
       }
       onset_data <- onset_data |>
-        dplyr::select(-"observation")
+        dplyr::select(-c("observation", "decrease_level"))
     }
 
     # Add new columns for wave_number, wave_starts and decrease_counter
-    onset_output <- onset_output |>
+    onset_and_decrease_level <- onset_and_decrease_level |>
       dplyr::mutate(
         wave_number = NA_real_,
         wave_starts = FALSE,
         wave_ends = FALSE,
         decrease_counter = 0
+      ) |>
+      dplyr::left_join(
+        onset_output |>
+          dplyr::select(c("reference_time", "seasonal_offset")),
+        by = "reference_time"
       )
 
-    if (only_current_season) {
-      decrease_below <- burden_output$values[[burden_level_decrease]]
-      onset_and_decrease_level <- onset_output |>
-        dplyr::mutate(
-          decrease_level = burden_level_decrease,
-          decrease_value = decrease_below
-        )
-
-      onset_output <- wave_fun(
-        onset_data = onset_and_decrease_level,
-        steps_with_decrease = steps_with_decrease
-      )
-    } else {
-      burden_levels <- purrr::map_dfr(burden_output, ~ {
-        tibble::tibble(
-          season = .x$season,
-          values = .x$values
-        ) |>
-          tidyr::unnest_longer(
-            col = values,
-            indices_to = "decrease_level",
-            values_to = "decrease_value"
-          ) |>
-          dplyr::filter(.data$decrease_level == burden_level_decrease)
-      })
-      onset_and_decrease_level <- onset_output |>
-        dplyr::right_join(burden_levels, by = "season")
-
-      onset_output <- wave_fun(
-        onset_data = onset_and_decrease_level,
-        steps_with_decrease = steps_with_decrease
-      )
-    }
+    onset_output <- wave_fun(
+      onset_data = onset_and_decrease_level,
+      steps_with_decrease = steps_with_decrease
+    )
   }
 
-  # Combine both results in lists
-  seasonal_output <- list(
-    onset_output = onset_output,
-    burden_output = burden_output
+  # Add attributes and class to `tsd_onset` object again
+  onset_output <- structure(
+    onset_output,
+    k = attr(onset_output_raw, "k"),
+    level = attr(onset_output_raw, "level"),
+    disease_threshold = attr(onset_output_raw, "disease_threshold"),
+    family = attr(onset_output_raw, "family"),
+    time_interval = attr(onset_output_raw, "time_interval"),
+    incidence_denominator = attr(onset_output_raw, "incidence_denominator"),
+    class = c("tsd_onset", class(onset_output))
   )
 
-  # Assign a class for the combined results
-  class(seasonal_output) <- "tsd_onset_and_burden"
-
-  return(seasonal_output)
+  # Combine both results in lists and assign a class for the combined results
+  structure(
+    list(
+      onset_output  = onset_output,
+      burden_output = burden_output
+    ),
+    multiple_waves = multiple_waves,
+    burden_level_decrease = burden_level_decrease,
+    steps_with_decrease = steps_with_decrease,
+    class = "tsd_onset_and_burden"
+  )
 }

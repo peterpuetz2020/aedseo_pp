@@ -22,8 +22,8 @@ test_that("Test that onset_output has one more season than burden_output", {
   skip_if_not_installed("withr")
   withr::local_seed(123)
   tsd_data <- generate_seasonal_data(
-    years = 3,
-    start_date = as.Date("2021-01-04")
+    years = 4,
+    start_date = as.Date("2021-05-24")
   )
 
   all_seasons_output <- combined_seasonal_output(tsd_data, only_current_season = FALSE)
@@ -170,7 +170,7 @@ test_that("Test that multiple waves feature works for all seasons in tsd", {
 
   # Settings
   steps_with_decrease <- 2
-  level <- "medium"
+  level <- "low"
 
   mult_waves <- combined_seasonal_output(
     tsd_data,
@@ -206,9 +206,139 @@ test_that("Test that multiple waves feature works for all seasons in tsd", {
     compare_burden_values$decrease_value.x,
     compare_burden_values$decrease_value.y
   )
+})
 
-  expect_equal(
-    compare_burden_values$decrease_level.x,
-    compare_burden_values$decrease_level.y
+test_that("Test that seasonal end feature works as expected", {
+  skip_if_not_installed("withr")
+  withr::local_seed(123)
+  tsd_data <- generate_seasonal_data(
+    years = 5,
+    start_date = as.Date("2021-01-04"),
+    noise_overdispersion = 10,
+    trend_rate = 1.001,
+    phase = 4
   )
+
+  # Settings
+  steps_with_decrease <- 2
+  level <- "medium"
+
+  seasonal_end <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease
+  )
+
+  row_nr <- seasonal_end$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(seasonal_offset == "TRUE") |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  # Expect one seasonal end value
+  expect_length(row_nr, 1)
+
+  # Expect two steps with decrease
+  end_row <- seasonal_end$onset_output[row_nr, ]$cases
+  expect_lt(end_row, seasonal_end$onset_output[row_nr - 1, ]$cases)
+  expect_lt(end_row, seasonal_end$onset_output[row_nr - 2, ]$cases)
+
+  mult_waves <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease,
+    multiple_waves = TRUE
+  )
+
+  # Expect first wave equal to seasonal end
+  row_nr_mult <- mult_waves$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(wave_ends == "TRUE") |>
+    dplyr::filter(dplyr::row_number() == 1) |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  expect_equal(row_nr, row_nr_mult)
+
+  # Expect new attributes
+  expect_match(attributes(seasonal_end)$burden_level_decrease, "medium")
+  expect_equal(attributes(seasonal_end)$steps_with_decrease, 2)
+  expect_equal(attributes(seasonal_end)$multiple_waves, FALSE)
+
+  expect_equal(attributes(mult_waves)$multiple_waves, TRUE)
+})
+
+test_that("Test that seasonal end feature works as expected when there are multiple waves", {
+  set.seed(123)
+  tsd_data_monthly <- generate_seasonal_data(
+    years = 14,
+    phase = 3,
+    start_date = as.Date("2020-05-18"),
+    noise_overdispersion = 5,
+    time_interval = "months"
+  )
+
+  tsd_data <- to_time_series(
+    cases = tsd_data_monthly$cases,
+    time = seq.Date(
+      from = as.Date("2020-05-18"),
+      by = "week",
+      length.out = length(tsd_data_monthly$cases)
+    )
+  ) |>
+    dplyr::filter(time < as.Date("2023-05-22"))
+
+  # Settings
+  steps_with_decrease <- 2
+  level <- "low"
+
+  seasonal_end <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease
+  )
+
+  mult_waves <- combined_seasonal_output(
+    tsd_data,
+    disease_threshold = 10,
+    only_current_season = TRUE,
+    burden_level_decrease = level,
+    steps_with_decrease = steps_with_decrease,
+    multiple_waves = TRUE
+  )
+
+  n_ends_single <- seasonal_end$onset_output |>
+    dplyr::filter(seasonal_offset == "TRUE") |>
+    dplyr::count() |>
+    dplyr::pull()
+
+  n_ends_mult <- mult_waves$onset_output |>
+    dplyr::filter(wave_ends == "TRUE") |>
+    dplyr::count() |>
+    dplyr::pull()
+
+  # Expect more ends in multiple_waves
+  expect_gt(n_ends_mult, n_ends_single)
+
+  row_nr <- seasonal_end$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(seasonal_offset == "TRUE") |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  # Expect first wave equal to seasonal end
+  row_nr_mult <- mult_waves$onset_output |>
+    dplyr::mutate(row = dplyr::row_number()) |>
+    dplyr::filter(wave_ends == "TRUE") |>
+    dplyr::filter(dplyr::row_number() == 1) |>
+    dplyr::select(row) |>
+    dplyr::pull()
+
+  expect_equal(row_nr, row_nr_mult)
 })

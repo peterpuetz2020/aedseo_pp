@@ -215,11 +215,11 @@ seasonal_burden_levels <- function(
     level_results <- main_level_fun(peak_seasonal_tsd, current_season = max(seasonal_tsd$season))
   }
 
-  class(level_results) <- "tsd_burden_levels"
-
-  # Keep attributes from the `tsd` class
-  attr(level_results, "time_interval") <- attr(tsd, "time_interval")
-  attr(level_results, "incidence_denominator") <- attr(tsd, "incidence_denominator")
-
-  return(level_results)
+  # Add class, and keep attributes from the `tsd` class
+  structure(
+    level_results,
+    time_interval = attr(tsd, "time_interval"),
+    incidence_denominator = attr(tsd, "incidence_denominator"),
+    class = c("tsd_burden_levels", class(level_results))
+  )
 }
