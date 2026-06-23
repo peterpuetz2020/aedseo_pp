@@ -15,6 +15,8 @@ estimate_disease_threshold(
   pick_significant_sequence = c("longest", "earliest"),
   season_importance_decay = 0.8,
   conf_levels = c(0.25, 0.5, 0.75),
+  family = c("quasipoisson", "poisson"),
+  burden_family = c("lnorm", "weibull", "exp"),
   ...
 )
 }
@@ -49,6 +51,10 @@ seasons, such that the influence of older seasons diminishes exponentially.}
 \item{conf_levels}{A numeric vector specifying the confidence levels for parameter estimates. The values have
 to be unique and in ascending order, the first percentile is the disease specific threshold.
 Specify one or three confidence levels e.g.: \code{c(0.25)} \code{c(0.25, 0.5, 0.75)}.}
+
+\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate modeling. Choose between 'quasipoisson' and 'poisson'. Passed to \code{seasonal_onset()} and then to \code{fit_growth_rate()}.}
+
+\item{burden_family}{A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', and 'exp'. Passed to \code{fit_percentiles()} as its \code{family} argument.}
 
 \item{...}{Arguments passed to the \code{seasonal_onset()} or \code{fit_percentiles()} function.
 \code{only_current_season = FALSE} and \code{disease_threshold = NA_real_} cannot be changed in \code{seasonal_onset()}.}

@@ -18,8 +18,7 @@ fit_growth_rate(
 
 \item{level}{The confidence level for parameter estimates, a numeric value between 0 and 1.}
 
-\item{family}{A character string specifying the family for modeling. Choose between 'poisson', or 'quasipoisson'.
-Must be one of: character, family-generator, or family object.}
+\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate modeling. Choose between 'quasipoisson' and 'poisson'.}
 }
 \value{
 A list containing:

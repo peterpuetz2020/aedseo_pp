@@ -145,3 +145,25 @@ test_that("Test that function returns NA when tsd is too short for the window si
     "No seasons met the `seasonal_onset()` criteria."
   )
 })
+
+test_that("family arguments are routed to onset and percentile fits", {
+  skip_if_not_installed("withr")
+  withr::local_seed(111)
+  tsd_data <- generate_seasonal_data(
+    years = 6,
+    start_date = as.Date("2021-01-01"),
+    noise_overdispersion = 3,
+    phase = 2
+  )
+
+  disease_threshold <- estimate_disease_threshold(
+    tsd_data,
+    family = "poisson",
+    burden_family = "weibull",
+    use_prev_seasons_num = 5,
+    skip_current_season = FALSE
+  )
+
+  expect_equal(attr(disease_threshold$onset_output, "family"), "poisson")
+  expect_equal(disease_threshold$optim$family, "weibull")
+})

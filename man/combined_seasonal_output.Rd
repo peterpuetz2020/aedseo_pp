@@ -27,10 +27,9 @@ trigger a seasonal onset alarm. If the average observation count in a window of 
 \code{disease_threshold}, a seasonal onset alarm can be triggered. For burden levels it defines the per time-step
 disease threshold that has to be surpassed for the observation to be included in the level calculations.}
 
-\item{family}{A character string specifying the family for modeling. Choose between 'poisson', or 'quasipoisson'.
-Must be one of: character, family-generator, or family object.  This is passed to 'seasonal_onset()'.}
+\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate modeling. Choose between 'quasipoisson' and 'poisson'.  This is passed to 'seasonal_onset()'.}
 
-\item{family_quant}{A character string specifying the family for modeling burden levels.}
+\item{family_quant}{A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', and 'exp'.}
 
 \item{season_start, season_end}{Integers giving the start and end weeks of the seasons to
 stratify the observations by.}
