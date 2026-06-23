@@ -21,8 +21,7 @@ seasonal_burden_levels(
 \arguments{
 \item{tsd}{A \code{tsd} object containing time series data}
 
-\item{family}{A character string specifying the family for modeling. Choose between 'poisson', or 'quasipoisson'.
-Must be one of: character, family-generator, or family object.}
+\item{family}{A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', and 'exp'.}
 
 \item{season_start, season_end}{Integers giving the start and end weeks of the seasons to
 stratify the observations by.}

@@ -28,8 +28,7 @@ seasonal_onset(
 onset alarm. If the average observation count in a window of size k exceeds \code{disease_threshold}, a seasonal
 onset alarm can be triggered.}
 
-\item{family}{A character string specifying the family for modeling. Choose between 'poisson', or 'quasipoisson'.
-Must be one of: character, family-generator, or family object.}
+\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate modeling. Choose between 'quasipoisson' and 'poisson'.}
 
 \item{na_fraction_allowed}{Numeric value between 0 and 1 specifying the fraction of observations in the window
 of size k that are allowed to be NA or zero, i.e. without cases, in onset calculations.}

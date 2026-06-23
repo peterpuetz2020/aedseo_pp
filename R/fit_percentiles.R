@@ -10,7 +10,7 @@
 #' observation has more influence on the model outcome, while lower weights reduce its impact.
 #' @param conf_levels A numeric vector specifying the confidence levels for parameter estimates. The values have
 #' to be unique and in ascending order, that is the lowest level is first and highest level is last.
-#' @param family `r rd_family()`
+#' @param family `r rd_burden_level_family`
 #' @param optim_method A character string specifying the method to be used in the optimisation. Lookup `?optim::stats`
 #' for details about methods.
 #' If using the exp family it is recommended to use Brent as it is a one-dimensional optimisation.

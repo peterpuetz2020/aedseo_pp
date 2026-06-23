@@ -12,7 +12,7 @@
 #' @inheritParams seasonal_onset
 #' @param disease_threshold `r rd_disease_threshold(usage = "combined")`
 #' @param family `r rd_family(usage = "combined")`
-#' @param family_quant A character string specifying the family for modeling burden levels.
+#' @param family_quant `r rd_burden_level_family`
 #' @param burden_level_decrease A character string specifying the burden breakpoint the observations should decrease
 #' under to reach `seasonal_offset` or before a new increase in observations can call a new wave onset if
 #' `multiple_waves` are TRUE. Choose between; "very low", "low", "medium", or "high".
