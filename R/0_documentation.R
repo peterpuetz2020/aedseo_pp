@@ -18,10 +18,12 @@ rd_disease_threshold <- function(usage = NULL) {
         })
 }
 rd_family <- function(usage = NULL) {
-  paste("A character string, family-generator, or family object specifying the distribution family for growth-rate modeling. Choose between 'quasipoisson' and 'poisson'.",
+  paste("A character string, family-generator, or family object specifying the distribution family for growth-rate
+        modeling. Choose between 'quasipoisson' and 'poisson'.",
         if (identical(usage, "combined")) " This is passed to 'seasonal_onset()'." else "")
 }
-rd_burden_level_family <- "A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', and 'exp'."
+rd_burden_level_family <- "A character string specifying the family for modeling burden levels. 
+        Choose between 'lnorm', 'weibull', and 'exp'."
 rd_only_current_season <- "Should the output only include results for the current season?"
 rd_population <- "An integer vector containing the time series background population."
 rd_season_start_end <- function(usage = NULL) {
