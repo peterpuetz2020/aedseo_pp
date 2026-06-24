@@ -101,9 +101,13 @@ estimate_disease_threshold <- function(
   # Estimate growth rates
   onset_output <- do.call(
     seasonal_onset,
-    c(list(tsd = tsd, season_start = season_start, season_end = season_end,
-           only_current_season = FALSE, disease_threshold = NA_real_, family = family),
-      onset_args)
+    c(
+      list(
+        tsd = tsd, season_start = season_start, season_end = season_end,
+        only_current_season = FALSE, disease_threshold = NA_real_, family = family
+      ),
+      onset_args
+    )
   )   # nolint: object_usage_linter.
 
   # Check if skip season
@@ -304,7 +308,8 @@ estimate_disease_threshold <- function(
       list(
         weighted_observations = weighted_significant_sequences |>
           dplyr::select("observation", "weight"),
-        conf_levels = conf_levels, family = burden_family),
+        conf_levels = conf_levels, family = burden_family
+      ),
       percentile_args
     )
   )
