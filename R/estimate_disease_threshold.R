@@ -24,6 +24,8 @@
 #' @param conf_levels A numeric vector specifying the confidence levels for parameter estimates. The values have
 #' to be unique and in ascending order, the first percentile is the disease specific threshold.
 #' Specify one or three confidence levels e.g.: `c(0.25)` `c(0.25, 0.5, 0.75)`.
+#' @param family `r rd_family()` Passed to `seasonal_onset()` and then to `fit_growth_rate()`.
+#' @param burden_family `r rd_burden_level_family` Passed to `fit_percentiles()` as its `family` argument.
 #' @param ... Arguments passed to the `seasonal_onset()` or `fit_percentiles()` function.
 #' `only_current_season = FALSE` and `disease_threshold = NA_real_` cannot be changed in `seasonal_onset()`.
 #'
@@ -54,6 +56,15 @@ estimate_disease_threshold <- function(
   pick_significant_sequence = c("longest", "earliest"),
   season_importance_decay = 0.8,
   conf_levels = c(0.25, 0.5, 0.75),
+  family = c(
+    "quasipoisson",
+    "poisson"
+  ),
+  burden_family = c(
+    "lnorm",
+    "weibull",
+    "exp"
+  ),
   ...
 ) {
   # Check input arguments
@@ -74,22 +85,29 @@ estimate_disease_threshold <- function(
   extra_args <- list(...)
 
   # Get the allowed arguments for seasonal_burden_levels() and/or fit_percentiles()
-  percentile_allowed <- names(formals(fit_percentiles))
+  percentile_allowed <- setdiff(names(formals(fit_percentiles)), "family")
   percentile_args <- extra_args[names(extra_args) %in% percentile_allowed]
 
   # Get the allowed arguments for seasonal_onset()
-  onset_allowed <- names(formals(seasonal_onset))
+  onset_allowed <- setdiff(names(formals(seasonal_onset)), "family")
   onset_args <- extra_args[names(extra_args) %in% onset_allowed]
 
   # Throw an error if any of the inputs are not supported
   pick_significant_sequence <- match.arg(pick_significant_sequence)
+  if (is.character(burden_family)) {
+    burden_family <- rlang::arg_match(burden_family)
+  }
 
   # Estimate growth rates
   onset_output <- do.call(
     seasonal_onset,
-    c(list(tsd = tsd, season_start = season_start, season_end = season_end,
-           only_current_season = FALSE, disease_threshold = NA_real_),
-      onset_args)
+    c(
+      list(
+        tsd = tsd, season_start = season_start, season_end = season_end,
+        only_current_season = FALSE, disease_threshold = NA_real_, family = family
+      ),
+      onset_args
+    )
   )   # nolint: object_usage_linter.
 
   # Check if skip season
@@ -286,11 +304,14 @@ estimate_disease_threshold <- function(
   # Run percentiles_fit function
   percentiles_fit <- do.call(
     fit_percentiles,
-    c(list(
-           weighted_observations = weighted_significant_sequences |>
-             dplyr::select("observation", "weight"),
-           conf_levels = conf_levels),
-    percentile_args)
+    c(
+      list(
+        weighted_observations = weighted_significant_sequences |>
+          dplyr::select("observation", "weight"),
+        conf_levels = conf_levels, family = burden_family
+      ),
+      percentile_args
+    )
   )
 
   fit_results <- list(

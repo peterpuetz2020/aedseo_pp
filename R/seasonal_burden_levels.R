@@ -9,7 +9,7 @@
 #' Observations will be incidence if `population` and `incidence` are available in the `tsd` object.
 #'
 #' @param tsd `r rd_tsd`
-#' @param family `r rd_family()`
+#' @param family `r rd_burden_level_family`
 #' @param season_start,season_end `r rd_season_start_end()`
 #' @param method A character string specifying the model to be used in the level calculations.
 #' Both model predict the levels of the current series of observations.

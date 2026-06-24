@@ -21,8 +21,7 @@ observation has more influence on the model outcome, while lower weights reduce 
 \item{conf_levels}{A numeric vector specifying the confidence levels for parameter estimates. The values have
 to be unique and in ascending order, that is the lowest level is first and highest level is last.}
 
-\item{family}{A character string specifying the family for modeling. Choose between 'poisson', or 'quasipoisson'.
-Must be one of: character, family-generator, or family object.}
+\item{family}{A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', and 'exp'.}
 
 \item{optim_method}{A character string specifying the method to be used in the optimisation. Lookup \code{?optim::stats}
 for details about methods.
