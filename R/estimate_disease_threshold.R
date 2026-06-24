@@ -300,11 +300,13 @@ estimate_disease_threshold <- function(
   # Run percentiles_fit function
   percentiles_fit <- do.call(
     fit_percentiles,
-    c(list(
-           weighted_observations = weighted_significant_sequences |>
-             dplyr::select("observation", "weight"),
-           conf_levels = conf_levels, family = burden_family),
-    percentile_args)
+    c(
+      list(
+        weighted_observations = weighted_significant_sequences |>
+          dplyr::select("observation", "weight"),
+        conf_levels = conf_levels, family = burden_family),
+      percentile_args
+    )
   )
 
   fit_results <- list(
