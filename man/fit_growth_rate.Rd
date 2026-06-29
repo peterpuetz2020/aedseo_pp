@@ -2,23 +2,33 @@
 % Please edit documentation in R/fit_growth_rate.R
 \name{fit_growth_rate}
 \alias{fit_growth_rate}
-\title{Fit a growth rate model to time series cases.}
+\title{Fit a growth rate model to time series observations.}
 \usage{
 fit_growth_rate(
-  cases,
+  cases = NULL,
+  successes = NULL,
   population = NULL,
+  trials = NULL,
   level = 0.95,
-  family = c("quasipoisson", "poisson")
+  family = c("quasipoisson", "poisson", "quasibinomial", "binomial")
 )
 }
 \arguments{
-\item{cases}{An integer vector containing the time series cases.}
+\item{cases}{An integer vector containing the time series cases. For binomial data, use \code{successes} instead.}
 
-\item{population}{An integer vector containing the time series background population.}
+\item{successes}{An integer vector containing binomial successes. This is an alias for \code{cases} for
+binomial/quasibinomial models.}
+
+\item{population}{An integer vector containing the time series background population. For binomial data, use \code{trials} instead.}
+
+\item{trials}{An integer vector containing binomial trials. This is an alias for \code{population} for
+binomial/quasibinomial models.}
 
 \item{level}{The confidence level for parameter estimates, a numeric value between 0 and 1.}
 
-\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate modeling. Choose between 'quasipoisson' and 'poisson'.}
+\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate
+modeling. Choose between 'poisson', 'quasipoisson', 'binomial', or 'quasibinomial'. Use 'binomial'
+or 'quasibinomial' for binomial data supplied as \code{successes} and \code{trials}.}
 }
 \value{
 A list containing:
@@ -31,8 +41,9 @@ confidence intervals.
 }
 }
 \description{
-This function fits a growth rate model to time series cases and provides parameter estimates along with
-confidence intervals.
+This function fits a growth rate model to time series observations and provides parameter estimates along with
+confidence intervals. For binomial data, supply successes and trials and use \code{family = "binomial"} or
+\code{family = "quasibinomial"}.
 }
 \examples{
 # Fit a growth rate model to a time series of counts
@@ -42,5 +53,12 @@ fit_growth_rate(
   cases = data,
   level = 0.95,
   family = "poisson"
+)
+
+# Fit a binomial growth rate model to successes out of trials
+fit_growth_rate(
+  successes = c(1, 2, 3, 4),
+  trials = c(10, 10, 10, 10),
+  family = "binomial"
 )
 }

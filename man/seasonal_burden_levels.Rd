@@ -21,7 +21,8 @@ seasonal_burden_levels(
 \arguments{
 \item{tsd}{A \code{tsd} object containing time series data}
 
-\item{family}{A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', and 'exp'.}
+\item{family}{A character string specifying the family for modeling burden levels.
+Choose between 'lnorm', 'weibull', 'exp', or 'beta'. Use 'beta' for proportional/binomial data. If \code{NULL}, defaults to 'beta' for proportional data and 'lnorm' otherwise. Proportional data must use 'beta'; non-proportional data cannot use 'beta'.}
 
 \item{season_start, season_end}{Integers giving the start and end weeks of the seasons to
 stratify the observations by.}
@@ -75,12 +76,14 @@ A \code{tsd_burden_levels} object containing:
 \item For 'weibull': Shape parameter.
 \item For 'lnorm': Mean of the log-transformed observations.
 \item For 'exp': Rate parameter.
+\item For 'beta': First shape parameter.
 }
 \item 'par_2':
 \itemize{
 \item For 'weibull': Scale parameter.
 \item For 'lnorm': Standard deviation of the log-transformed observations.
 \item For 'exp': Not applicable (set to NA).
+\item For 'beta': Second shape parameter.
 }
 }
 \item 'obj_value': The value of the objective function - (negative log-likelihood), which represent the minimised
@@ -91,6 +94,7 @@ objective function value from the optimisation. Smaller value equals better opti
 \item 'weibull': Uses the Weibull distribution for fitting.
 \item 'lnorm': Uses the Log-normal distribution for fitting.
 \item 'exp': Uses the Exponential distribution for fitting.
+\item 'beta': Uses the Beta distribution for proportional/binomial observations.
 }
 }
 \item 'disease_threshold': The input disease threshold, which is also the very low level.

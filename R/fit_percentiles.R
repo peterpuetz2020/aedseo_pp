@@ -2,11 +2,11 @@
 #'
 #' @description
 #'
-#' This function estimates the percentiles of weighted time series cases or incidences.
+#' This function estimates the percentiles of weighted time series cases, incidences, or proportions.
 #' The output contains the percentiles from the fitted distribution.
 #'
-#' @param weighted_observations A tibble containing two columns of length n; `observation`, which contains either cases
-#' or incidences, and `weight`, which is the importance assigned to the observation. Higher weights indicate that an
+#' @param weighted_observations A tibble containing two columns of length n; `observation`, which contains cases,
+#' incidences, or proportions, and `weight`, which is the importance assigned to the observation. Higher weights indicate that an
 #' observation has more influence on the model outcome, while lower weights reduce its impact.
 #' @param conf_levels A numeric vector specifying the confidence levels for parameter estimates. The values have
 #' to be unique and in ascending order, that is the lowest level is first and highest level is last.
@@ -25,10 +25,12 @@
 #'          - For 'weibull': Shape parameter (k).
 #'          - For 'lnorm': Mean of the log-transformed observations.
 #'          - For 'exp': Rate parameter (rate).
+#'          - For 'beta': First shape parameter.
 #'       - 'par_2':
 #'          - For 'weibull': Scale parameter (scale).
 #'          - For 'lnorm': Standard deviation of the log-transformed observations.
 #'          - For 'exp': Not applicable (set to NA).
+#'          - For 'beta': Second shape parameter.
 #'   - 'obj_value': The value of the objective function - (negative log-likelihood), which represent the minimized
 #'                  objective function value from the optimisation. Smaller value equals better optimisation.
 #'   - 'converged': Logical. TRUE if the optimisation converged.
@@ -36,6 +38,7 @@
 #'      - 'weibull': Uses the Weibull distribution for fitting.
 #'      - 'lnorm': Uses the Log-normal distribution for fitting.
 #'      - 'exp': Uses the Exponential distribution for fitting.
+#'      - 'beta': Uses the Beta distribution for proportional/binomial observations.
 #'
 #' @export
 #'
@@ -61,9 +64,7 @@
 fit_percentiles <- function(
   weighted_observations,
   conf_levels = c(0.50, 0.90, 0.95),
-  family = c("lnorm",
-             "weibull",
-             "exp"),
+  family = NULL,
   optim_method = c("Nelder-Mead",
                    "BFGS",
                    "CG",
@@ -85,14 +86,14 @@ fit_percentiles <- function(
   checkmate::assert_names(
     colnames(weighted_observations),
     must.include = "weight",
-    subset.of = c("weight", "cases", "incidence", "observation"),
+    subset.of = c("weight", "cases", "incidence", "proportion", "successes", "observation"),
     add = coll
   )
   checkmate::assert_numeric(lower_optim, add = coll)
   checkmate::assert_numeric(upper_optim, add = coll)
   checkmate::reportAssertions(coll)
+  family_candidates <- c("lnorm", "weibull", "exp", "beta")
   # Match the arguments.
-  family <- rlang::arg_match(family)
   optim_method <- rlang::arg_match(optim_method)
 
   # Rename cases or incidence to observation if they are present and observation is not
@@ -105,6 +106,34 @@ fit_percentiles <- function(
   ) {
     weighted_observations <- weighted_observations |>
       dplyr::rename(observation = "cases")
+  }
+  if ("proportion" %in% names(weighted_observations) &&
+      !any(c("observation", "incidence", "cases") %in% names(weighted_observations))
+  ) {
+    weighted_observations <- weighted_observations |>
+      dplyr::rename(observation = "proportion")
+  }
+  if ("successes" %in% names(weighted_observations) &&
+      !any(c("observation", "incidence", "cases", "proportion") %in% names(weighted_observations))
+  ) {
+    weighted_observations <- weighted_observations |>
+      dplyr::rename(observation = "successes")
+  }
+
+  is_proportional_data <- all(
+    weighted_observations$observation >= 0 & weighted_observations$observation <= 1,
+    na.rm = TRUE
+  )
+  if (is.null(family)) {
+    family <- if (is_proportional_data) "beta" else "lnorm"
+  } else {
+    family <- rlang::arg_match(family, family_candidates)
+    if (is_proportional_data && family != "beta") {
+      stop("Only the 'beta' family can be used for proportional data.", call. = FALSE)
+    }
+    if (!is_proportional_data && family == "beta") {
+      stop("The 'beta' family can only be used for proportional data.", call. = FALSE)
+    }
   }
 
   # If there is only one unique observation we cannot optimise -> return NA
@@ -125,7 +154,15 @@ fit_percentiles <- function(
     init_params <- switch(family,
       weibull = log(c(1.5, mean(observations))),
       lnorm = c(mean(log(observations)), log(stats::sd(log(observations)))),
-      exp = log(1.5)
+      exp = log(1.5),
+      beta = {
+        mu <- mean(observations)
+        v <- stats::var(observations)
+        precision <- if (is.na(v) || v <= 0 || v >= mu * (1 - mu)) 10 else (mu * (1 - mu) / v) - 1
+        alpha <- max(mu * precision, 1e-3)
+        beta <- max((1 - mu) * precision, 1e-3)
+        log(c(alpha, beta))
+      }
     )
     init_params
   }
@@ -136,7 +173,12 @@ fit_percentiles <- function(
       weibull = stats::dweibull(weighted_observations$observation, shape = exp(par[1]), scale = exp(par[2]),
                                 log = TRUE),
       lnorm = stats::dlnorm(weighted_observations$observation, meanlog =  par[1], sdlog = exp(par[2]), log = TRUE),
-      exp = stats::dexp(weighted_observations$observation, rate = exp(par[1]), log = TRUE)
+      exp = stats::dexp(weighted_observations$observation, rate = exp(par[1]), log = TRUE),
+      beta = {
+        eps <- sqrt(.Machine$double.eps)
+        x <- pmin(pmax(weighted_observations$observation, eps), 1 - eps)
+        stats::dbeta(x, shape1 = exp(par[1]), shape2 = exp(par[2]), log = TRUE)
+      }
     )
     -sum(log_probability * weighted_observations$weight)
   }
@@ -157,14 +199,16 @@ fit_percentiles <- function(
   par_fit <- switch(family,
     weibull = exp(optim_obj$par),
     lnorm = c(optim_obj$par[1], exp(optim_obj$par[2])),
-    exp = c(exp(optim_obj$par), NA)
+    exp = c(exp(optim_obj$par), NA),
+    beta = exp(optim_obj$par)
   )
 
   # Estimate the low, medium, high intensity levels based on input `conf_levels`
   percentiles <- switch(family,
     weibull = stats::qweibull(p = conf_levels, shape = par_fit[1], scale = par_fit[2]),
     lnorm = stats::qlnorm(p = conf_levels, meanlog = par_fit[1], sdlog = par_fit[2]),
-    exp = stats::qexp(p = conf_levels, rate = par_fit[1])
+    exp = stats::qexp(p = conf_levels, rate = par_fit[1]),
+    beta = stats::qbeta(p = conf_levels, shape1 = par_fit[1], shape2 = par_fit[2])
   )
 
   # Create return fit parameters

@@ -27,9 +27,12 @@ trigger a seasonal onset alarm. If the average observation count in a window of 
 \code{disease_threshold}, a seasonal onset alarm can be triggered. For burden levels it defines the per time-step
 disease threshold that has to be surpassed for the observation to be included in the level calculations.}
 
-\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate modeling. Choose between 'quasipoisson' and 'poisson'.  This is passed to 'seasonal_onset()'.}
+\item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate
+modeling. Choose between 'poisson', 'quasipoisson', 'binomial', or 'quasibinomial'. Use 'binomial'
+or 'quasibinomial' for binomial data supplied as \code{successes} and \code{trials}.  This is passed to 'seasonal_onset()'.}
 
-\item{family_quant}{A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', and 'exp'.}
+\item{family_quant}{A character string specifying the family for modeling burden levels.
+Choose between 'lnorm', 'weibull', 'exp', or 'beta'. Use 'beta' for proportional/binomial data. If \code{NULL}, defaults to 'beta' for proportional data and 'lnorm' otherwise. Proportional data must use 'beta'; non-proportional data cannot use 'beta'.}
 
 \item{season_start, season_end}{Integers giving the start and end weeks of the seasons to
 stratify the observations by.}
@@ -64,7 +67,7 @@ A \code{tsd_onset} object containing:
 \item 'lower_growth_rate': The lower bound of the growth rate's confidence interval.
 \item 'upper_growth_rate': The upper bound of the growth rate's confidence interval.
 \item 'growth_warning': Logical. Is the growth rate significantly higher than zero?
-\item 'average_observation_window': The average of cases or incidence within the time window.
+\item 'average_observation_window': The average of cases/incidence, or pooled proportion for binomial data, within the time window.
 \item 'average_observation_warning': Logical. Does the average observations exceed the disease threshold?
 \item 'seasonal_onset_alarm': Logical. Is there a seasonal onset alarm?
 \item 'skipped_window': Logical. Was the window skipped due to missing observations?
@@ -104,12 +107,14 @@ A \code{tsd_burden_levels} object containing:
 \item For 'weibull': Shape parameter.
 \item For 'lnorm': Mean of the log-transformed observations.
 \item For 'exp': Rate parameter.
+\item For 'beta': First shape parameter.
 }
 \item 'par_2':
 \itemize{
 \item For 'weibull': Scale parameter.
 \item For 'lnorm': Standard deviation of the log-transformed observations.
 \item For 'exp': Not applicable (set to NA).
+\item For 'beta': Second shape parameter.
 }
 }
 \item 'obj_value': The value of the objective function - (negative log-likelihood), which represent the minimised
@@ -120,6 +125,7 @@ objective function value from the optimisation. Smaller value equals better opti
 \item 'weibull': Uses the Weibull distribution for fitting.
 \item 'lnorm': Uses the Log-normal distribution for fitting.
 \item 'exp': Uses the Exponential distribution for fitting.
+\item 'beta': Uses the Beta distribution for proportional/binomial observations.
 }
 }
 \item 'disease_threshold': The input disease threshold, which is also the very low level.
