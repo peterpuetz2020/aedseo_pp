@@ -84,3 +84,19 @@ test_that("Test that when there is only one unique observation return NA and war
     rep(NA, 3)
   )
 })
+
+test_that("fit_percentiles defaults proportional observations to beta", {
+  weighted_observations <- tibble::tibble(
+    observation = c(0.1, 0.2, 0.3, 0.4),
+    weight = c(1, 1, 1, 1)
+  )
+
+  fit <- fit_percentiles(weighted_observations, conf_levels = c(0.25, 0.5, 0.75))
+  expect_equal(fit$family, "beta")
+  expect_true(all(fit$values >= 0 & fit$values <= 1))
+
+  expect_error(
+    fit_percentiles(weighted_observations, family = "lnorm"),
+    "Only the 'beta' family"
+  )
+})

@@ -33,7 +33,9 @@ fit_growth_rate <- function(
   level = 0.95,
   family = c(
     "quasipoisson",
-    "poisson"
+    "poisson",
+    "quasibinomial",
+    "binomial"
   )
 ) {
   safe_confint <- purrr::safely(stats::confint)
@@ -57,7 +59,16 @@ fit_growth_rate <- function(
   }
   checkmate::reportAssertions(coll) # Assert that we have an object before going further
   checkmate::assert_names(names(fam_obj), must.include = c("family", "link"), add = coll)
-  checkmate::assert_choice(fam_obj$family, choices = c("poisson", "quasipoisson"), add = coll)
+  checkmate::assert_choice(fam_obj$family, choices = c("poisson", "quasipoisson", "binomial", "quasibinomial"), add = coll)
+  if (fam_obj$family %in% c("binomial", "quasibinomial")) {
+    if (is.null(population)) {
+      coll$push("`population` must be supplied for binomial and quasibinomial models")
+    } else {
+      checkmate::assert_true(all(cases >= 0, na.rm = TRUE), add = coll)
+      checkmate::assert_true(all(population > 0, na.rm = TRUE), add = coll)
+      checkmate::assert_true(all(cases <= population, na.rm = TRUE), add = coll)
+    }
+  }
   checkmate::reportAssertions(coll)
 
   # Construct the data with growth rates for the glm model
@@ -71,13 +82,20 @@ fit_growth_rate <- function(
   # Construct formula terms
   terms <- if (is.null(population)) {
     "growth_rate"
+  } else if (fam_obj$family %in% c("binomial", "quasibinomial")) {
+    "growth_rate"
   } else {
     c("growth_rate", "offset(log(population))")
+  }
+  response <- if (fam_obj$family %in% c("binomial", "quasibinomial")) {
+    "cbind(cases, population - cases)"
+  } else {
+    "cases"
   }
 
   # Fit the model
   growth_fit <- stats::glm(
-    formula = stats::reformulate(response = "cases", termlabels = terms),
+    formula = stats::as.formula(paste(response, "~", paste(terms, collapse = " + "))),
     data = growth_data,
     family = fam_obj
   )
