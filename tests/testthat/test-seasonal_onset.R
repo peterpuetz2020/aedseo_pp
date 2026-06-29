@@ -238,7 +238,7 @@ test_that("family works the same via name, generator or object", {
 
   expect_error(seasonal_onset(
     tsd = tsd_data,
-    family = stats::binomial,
+    family = 4,
   ))
 })
 

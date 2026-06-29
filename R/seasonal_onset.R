@@ -46,7 +46,9 @@ seasonal_onset <- function(
   disease_threshold = NA_real_,
   family = c(
     "quasipoisson",
-    "poisson"
+    "poisson",
+    "quasibinomial",
+    "binomial"
     # TODO: #10 Include negative.binomial regressions. @telkamp7
   ),
   na_fraction_allowed = 0.4,
@@ -58,10 +60,20 @@ seasonal_onset <- function(
   coll <- checkmate::makeAssertCollection()
   checkmate::assert_data_frame(tsd, add = coll)
   checkmate::assert_class(tsd, "tsd", add = coll)
+  # Support binomial/quasibinomial-oriented column names from to_time_series()
+  if (all(c("successes", "trials") %in% names(tsd))) {
+    tsd <- tsd |>
+      dplyr::mutate(
+        cases = .data$successes,
+        population = .data$trials,
+        incidence = if ("proportion" %in% names(tsd)) .data$proportion else .data$successes / .data$trials
+      )
+    attr(tsd, "incidence_denominator") <- 1
+  }
   checkmate::assert_names(
     colnames(tsd),
     must.include = c("time", "cases"),
-    subset.of = c("time", "cases", "incidence", "population"),
+    subset.of = c("time", "cases", "incidence", "population", "successes", "proportion", "trials"),
     add = coll
   )
   checkmate::assert_numeric(level, lower = 0, upper = 1, add = coll)
@@ -74,6 +86,9 @@ seasonal_onset <- function(
   checkmate::assert_integerish(season_end, lower = 1, upper = 53,
                                null.ok = TRUE, add = coll)
   checkmate::assert_logical(only_current_season, null.ok = TRUE, add = coll)
+  if (is.character(family)) {
+    family <- match.arg(family)
+  }
   if (!is.null(season_start) && is.null(season_end)) {
     coll$push("If season_start is assigned season_end must also be assigned.")
   }
@@ -156,6 +171,7 @@ seasonal_onset <- function(
       average_observations_window = NA_real_,
       average_observations_warning = FALSE,
       seasonal_onset_alarm = FALSE,
+      seasonal_onset = FALSE,
       skipped_window = TRUE,
       converged = FALSE
     )
@@ -202,14 +218,27 @@ seasonal_onset <- function(
     growth_warning <- growth_rates$estimate[2] > 0
 
     if (use_incidence) {
-      # Calculate average incidence in window (k)
-      average_observations_window <- base::sum(obs_iter$incidence, na.rm = TRUE) / k
+      # Calculate pooled incidence/proportion in window (k), weighted by trials
+      # and expressed on the original incidence denominator scale.
+      total_cases <- base::sum(obs_iter$cases, na.rm = TRUE)
+      total_population <- base::sum(obs_iter$population, na.rm = TRUE)
+      average_observations_window <- if (total_population > 0) {
+        (total_cases / total_population) * attr(tsd, "incidence_denominator")
+      } else {
+        NA_real_
+      }
     } else {
       # Calculate average cases in window (k)
       average_observations_window <- base::sum(obs_iter$cases, na.rm = TRUE) / k
     }
-    # Evaluate if average_incidence_window exceeds disease_threshold
-    average_observations_warning <- average_observations_window > disease_threshold
+    # Evaluate if average_incidence_window exceeds disease_threshold.
+    # If no threshold is supplied, no threshold-based onset can be detected,
+    # but keep the output schema consistent for downstream methods.
+    average_observations_warning <- if (is.na(disease_threshold)) {
+      FALSE
+    } else {
+      average_observations_window > disease_threshold
+    }
 
     # Give a seasonal_onset_alarm if both criteria are met
     seasonal_onset_alarm <- growth_warning & average_observations_warning
@@ -236,16 +265,17 @@ seasonal_onset <- function(
     )
   }
 
-  if (!is.na(disease_threshold)) {
-    # Extract seasons from onset_output and create seasonal_onset
-    res <- res |>
-      dplyr::mutate(
-        onset_flag = cumsum(.data$seasonal_onset_alarm),
-        seasonal_onset = .data$onset_flag == 1 & !duplicated(.data$onset_flag),
-        .by = "season"
-      ) |>
-      dplyr::select(-"onset_flag")
-  }
+  # Extract seasons from onset_output and create seasonal_onset. When no
+  # disease_threshold is supplied, seasonal_onset_alarm is FALSE for every row
+  # and seasonal_onset is therefore consistently present but always FALSE.
+  res <- res |>
+    dplyr::mutate(
+      seasonal_onset_alarm = tidyr::replace_na(.data$seasonal_onset_alarm, FALSE),
+      onset_flag = cumsum(.data$seasonal_onset_alarm),
+      seasonal_onset = .data$onset_flag == 1 & !duplicated(.data$onset_flag),
+      .by = "season"
+    ) |>
+    dplyr::select(-"onset_flag")
 
   # Create as tibble with an`tsd_onset` class
   # Add attributes, and keep attributes from the `tsd` class

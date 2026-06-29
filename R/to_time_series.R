@@ -51,12 +51,42 @@
 #'
 to_time_series <- function(                                     # nolint: cyclocomp_linter.
   cases = NULL,
+  successes = NULL,
   incidence = NULL,
+  proportion = NULL,
   population = NULL,
+  trials = NULL,
   incidence_denominator = if (is.null(population)) NA_real_ else 1e5,
   time,
   time_interval = c("weeks", "days", "months")
 ) {
+  if (!is.null(successes)) {
+    if (!is.null(cases)) {
+      stop("Use only one of `cases` or `successes`.")
+    }
+    cases <- successes
+  }
+  if (!is.null(trials)) {
+    if (!is.null(population)) {
+      stop("Use only one of `population` or `trials`.")
+    }
+    population <- trials
+  }
+  if (!is.null(proportion)) {
+    if (!is.null(incidence)) {
+      stop("Use only one of `incidence` or `proportion`.")
+    }
+    proportion <- dplyr::if_else(
+      proportion > 1 & proportion <= 100, proportion / 100, proportion
+    )
+    incidence <- proportion
+    incidence_denominator <- 1
+  }
+  binomial_input <- !is.null(successes) || !is.null(proportion) || !is.null(trials)
+  if (binomial_input) {
+    incidence_denominator <- 1
+  }
+
   # Check input arguments
   coll <- checkmate::makeAssertCollection()
   checkmate::assert_date(time, add = coll)
@@ -71,8 +101,24 @@ to_time_series <- function(                                     # nolint: cycloc
   if (is.null(cases) && is.null(population) && !is.null(incidence)) {
     coll$push("seasonal_onset() assumes integer counts, please supply population and incidence_denominator")
   }
+  if (!is.null(cases) && !is.null(population) && any(cases > population, na.rm = TRUE)) {
+    coll$push("`cases` must be less than or equal to `population` when both are supplied")
+  }
   if (is.null(population) && !is.na(incidence_denominator)) {
     coll$push("If incidence_denominator is assigned population should also be assigned")
+  }
+  if (!is.null(proportion) && any(incidence < 0 | incidence > 1, na.rm = TRUE)) {
+    coll$push("`proportion` must be between 0 and 1 or a percentage between 1 and 100")
+  }
+  if (binomial_input) {
+    if (is.null(population)) {
+      coll$push("`trials` (or `population`) must be supplied for binomial input")
+    } else {
+      checkmate::assert_true(all(population > 0, na.rm = TRUE), add = coll)
+    }
+    if (!is.null(cases)) {
+      checkmate::assert_true(all(cases >= 0, na.rm = TRUE), add = coll)
+    }
   }
   checkmate::reportAssertions(coll)
 
@@ -96,6 +142,19 @@ to_time_series <- function(                                     # nolint: cycloc
   if (is.null(cases) && !is.null(population) && !is.null(incidence) && !is.na(incidence_denominator)) {
     tbl <- tbl |>
       dplyr::mutate(cases = round((.data$incidence * .data$population) / incidence_denominator))
+  }
+
+  if (binomial_input && !is.null(cases) && !is.null(population)) {
+    tbl <- tbl |>
+      dplyr::mutate(incidence = .data$cases / .data$population)
+  }
+  if (binomial_input) {
+    tbl <- tibble::tibble(
+      time = time,
+      successes = tbl$cases,
+      proportion = tbl$incidence,
+      trials = tbl$population
+    )
   }
 
   # Create the time series data object

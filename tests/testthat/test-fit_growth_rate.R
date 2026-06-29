@@ -25,3 +25,28 @@ test_that("The growth rate models converge", {
   expect_true(object = fit_poisson$fit$converged)
   expect_true(object = fit_quasipoisson$fit$converged)
 })
+
+test_that("fit_growth_rate supports binomial and quasibinomial families", {
+  expect_s3_class(
+    fit_growth_rate(
+      cases = c(1, 2, 3, 4),
+      population = c(10, 10, 10, 10),
+      family = "binomial"
+    )$fit,
+    "glm"
+  )
+
+  expect_s3_class(
+    fit_growth_rate(
+      cases = c(1, 2, 3, 4),
+      population = c(10, 10, 10, 10),
+      family = "quasibinomial"
+    )$fit,
+    "glm"
+  )
+
+  expect_error(
+    fit_growth_rate(cases = c(1, 2, 3, 4), family = "binomial"),
+    "population"
+  )
+})
