@@ -70,6 +70,8 @@ seasonal_onset <- function(
         population = .data$trials,
         incidence = if ("proportion" %in% names(tsd)) .data$proportion else .data$successes / .data$trials
       )
+    # Keep binomial rolling windows on the proportion scale, including for
+    # manually constructed tsd objects whose denominator attribute is not 1.
     attr(tsd, "incidence_denominator") <- 1
   }
   checkmate::assert_names(

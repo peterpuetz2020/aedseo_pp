@@ -61,11 +61,14 @@ estimate_disease_threshold <- function(
   burden_family = NULL,
   ...
 ) {
+  is_binomial_tsd <- function(tsd) {
+    "trials" %in% names(tsd) && any(c("successes", "proportion") %in% names(tsd))
+  }
   default_onset_family <- function(tsd, family) {
     if (!is.null(family)) {
       return(family)
     }
-    if (all(c("successes", "trials") %in% names(tsd)) || all(c("proportion", "trials") %in% names(tsd))) {
+    if (is_binomial_tsd(tsd)) {
       "quasibinomial"
     } else {
       "quasipoisson"
@@ -83,16 +86,15 @@ estimate_disease_threshold <- function(
     }
     "custom"
   }
-  normalize_threshold <- function(x, incidence_denominator) {
-    if (isTRUE(identical(incidence_denominator, 1))) {
+  normalize_threshold <- function(x, is_binomial) {
+    if (is_binomial) {
       pmin(pmax(x, 0), 1)
     } else {
       dplyr::if_else(dplyr::between(x, 0, 1), 1, x)
     }
   }
   format_onset_output <- function(onset_output) {
-    if (isTRUE(identical(attr(onset_output, "incidence_denominator"), 1)) &&
-        all(c("successes", "trials", "proportion") %in% names(tsd))) {
+    if (is_binomial_input) {
       onset_output <- onset_output |>
         dplyr::rename(
           successes = "cases",
@@ -121,6 +123,7 @@ estimate_disease_threshold <- function(
 
   # Capture all extra arguments
   extra_args <- list(...)
+  is_binomial_input <- is_binomial_tsd(tsd)
   onset_family <- default_onset_family(tsd, family)
 
   # Get the allowed arguments for seasonal_burden_levels() and/or fit_percentiles()
@@ -313,7 +316,7 @@ estimate_disease_threshold <- function(
     same_result <- list(
       note = "Only one season is used to determine the threshold.",
       seasons = unique(per_season_sequence$season),
-      disease_threshold = normalize_threshold(disease_threshold, attr(onset_output, "incidence_denominator")),
+      disease_threshold = normalize_threshold(disease_threshold, is_binomial_input),
       optim = NA,
       settings = list(skip_current_season = skip_current_season,
                       min_significant_time = min_significant_time,
@@ -341,7 +344,7 @@ estimate_disease_threshold <- function(
 
   # For proportion-based data, account for binomial precision by upweighting
   # observations from larger trial counts.
-  if (isTRUE(identical(attr(onset_output, "incidence_denominator"), 1)) && "population" %in% names(onset_output)) {
+  if (is_binomial_input) {
     k_window <- attr(onset_output, "k")
     if (is.null(k_window) || !is.numeric(k_window) || length(k_window) != 1) {
       k_window <- 5
@@ -384,7 +387,7 @@ estimate_disease_threshold <- function(
   fit_results <- list(
     note = "Sufficient information to estimate percentiles.",
     seasons = unique(weighted_significant_sequences$season),
-    disease_threshold = normalize_threshold(percentiles_fit$values[1], attr(onset_output, "incidence_denominator")),
+    disease_threshold = normalize_threshold(percentiles_fit$values[1], is_binomial_input),
     optim = percentiles_fit,
     settings = list(skip_current_season = skip_current_season,
                     min_significant_time = min_significant_time,
