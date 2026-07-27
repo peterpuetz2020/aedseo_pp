@@ -55,10 +55,13 @@ autoplot.tsd <- function(
   start_date <- min(object$time)
   end_date <- max(object$time)
 
-  # Use incidence if in onset_output else use cases
+  # Use proportions for binomial data, incidence when available, or cases otherwise
   obs_name <- "cases"
   y_label <- "Cases"
-  if (!is.na(attr(object, "incidence_denominator"))) {
+  if ("proportion" %in% attr(object, "outcome_type")) {
+    obs_name <- "proportion"
+    y_label <- "Proportion"
+  } else if (!is.na(attr(object, "incidence_denominator"))) {
     obs_name <- "incidence"
     y_label <- "Incidence"
   }
@@ -70,10 +73,9 @@ autoplot.tsd <- function(
         y = .data[[obs_name]]
       )
     ) +
-    ggplot2::geom_point() +
+    ggplot2::geom_point(size = obs_size) +
     ggplot2::geom_line(
-      linewidth = line_width,
-      size = obs_size
+      linewidth = line_width
     ) +
     time_interval_x_axis(
       start_date = start_date,
@@ -135,10 +137,13 @@ autoplot.tsd_onset <- function(
   start_date <- min(object$reference_time)
   end_date <- max(object$reference_time)
 
-  # Use incidence if in onset_output else use cases
+  # Use proportions for binomial data, incidence when available, or cases otherwise
   obs_name <- "cases"
   y_label <- "Cases"
-  if (!is.na(attr(object, "incidence_denominator"))) {
+  if (identical(attr(object, "model_outcome"), "proportion")) {
+    obs_name <- "proportion"
+    y_label <- "Proportion"
+  } else if (!is.na(attr(object, "incidence_denominator"))) {
     obs_name <- "incidence"
     y_label <- "Incidence"
   }
@@ -334,10 +339,13 @@ autoplot.tsd_onset_and_burden <- function(
   virus_df <- object$onset_output |>
     dplyr::filter(.data$season == max(.data$season))
 
-  # Use incidence if in onset_output else use cases
+  # Use proportions for binomial data, incidence when available, or cases otherwise
   obs_name <- "cases"
   y_label <- "Cases"
-  if (!is.na(attr(object$burden_output, "incidence_denominator"))) {
+  if (identical(attr(object$burden_output, "burden_outcome"), "proportion")) {
+    obs_name <- "proportion"
+    y_label <- "Proportion"
+  } else if (!is.na(attr(object$burden_output, "incidence_denominator"))) {
     obs_name <- "incidence"
     y_label <- "Incidence"
   }
@@ -531,9 +539,11 @@ autoplot.tsd_growth_warning <- function(
   breaks_y_axis = 8,
   ...
 ) {
-  # Use incidence if in onset_output else use cases
+  # Use proportions for binomial data, incidence when available, or cases otherwise
   obs_name <- "cases"
-  if (!is.na(attr(object, "incidence_denominator"))) {
+  if (identical(attr(object, "model_outcome"), "proportion")) {
+    obs_name <- "proportion"
+  } else if (!is.na(attr(object, "incidence_denominator"))) {
     obs_name <- "incidence"
   }
   time_interval <- attr(object, "time_interval")
