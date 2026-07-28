@@ -22,7 +22,8 @@ autoplot <- function(object, ...) {
 #' `autoplot(tsd_onset_and_burden)`
 #'  - Generates a line connecting the observations in the current season, along with colored regions
 #'  representing different burdens levels and a vertical line indicating seasonal onset.
-#'  The y-axis is scaled with `ggplot2::scale_y_log10` to give better visualisation of the burden levels.
+#'  The y-axis is log-scaled for counts and incidence to improve visualisation of the burden levels.
+#'  Proportions use a linear y-axis starting at zero so that zero observations remain visible.
 
 #' @param object A `tsd` object
 #' @param line_width `r rd_line_width`
@@ -255,7 +256,8 @@ autoplot.tsd_onset <- function(
 #'
 #' @param object a `tsd_combined_seasonal_output` object.
 #' @param only_burden_levels a character specifying if only burden levels and observations should be shown on the plot
-#' @param y_lower_bound A numeric specifying the lower bound of the y-axis.
+#' @param y_lower_bound A numeric specifying the lower bound of the log-scaled y-axis.
+#' Ignored for proportions, which always start at zero on a linear scale.
 #' @param factor_to_max A numeric specifying the factor to multiply the high burden level for extending the y-axis.
 #' @param disease_color `r rd_disease_color`
 #' @param season_start,season_end `r rd_season_start_end()`
@@ -368,37 +370,67 @@ autoplot.tsd_onset_and_burden <- function(
   last_year <- stringr::str_split(epi_calendar(cur_week, start = season_start, end = season_end), "/")[[1]][2]
   date_last_week_in_season <- ISOweek::ISOweek2date(paste0(last_year, "-W", sprintf("%02d", season_end), "-1"))
 
-  # Extend y-axis
+  is_proportion <- identical(burden_outcome, "proportion")
+
+  # Extend y-axis. Proportions remain on their natural [0, 1] scale and include zero.
+  plot_y_lower_bound <- if (is_proportion) 0 else y_lower_bound
   very_high <- max(virus_levels_df$values) * factor_to_max
+  if (is_proportion) {
+    very_high <- min(1, max(very_high, virus_df[[obs_name]], na.rm = TRUE))
+  }
   y_levels <- pretty(c(0, very_high))
   virus_levels_df$values <- append(virus_levels_df$values, stats::setNames(max(y_levels), "very high"))
 
   levels_df <- data.frame(
     level = names(virus_levels_df$values),
-    ymin = c(y_lower_bound, virus_levels_df$values[-5]),
+    ymin = c(plot_y_lower_bound, virus_levels_df$values[-5]),
     ymax = virus_levels_df$values
   )
 
   # Assign colors with transparency
   levels_df$color <- scales::alpha(disease_color, fill_alpha)
 
-  # Calculate y_tics
-  y_tics_log10 <- pretty(c(log10(y_lower_bound), log10(max(y_levels))))
-  y_tics_levels <- 10^(y_tics_log10)
+  # Calculate y ticks
+  if (is_proportion) {
+    y_tics <- pretty(c(0, max(y_levels)))
+  } else {
+    y_tics_log10 <- pretty(c(log10(plot_y_lower_bound), log10(max(y_levels))))
+    y_tics_levels <- 10^(y_tics_log10)
 
-  # For each tic, find the closest magnitude to round correctly
-  round_to_nearest <- function(x) {
-    magnitude <- 10^floor(log10(x))
-    plyr::round_any(x, accuracy = magnitude)
+    # For each tick, find the closest magnitude to round correctly
+    round_to_nearest <- function(x) {
+      magnitude <- 10^floor(log10(x))
+      plyr::round_any(x, accuracy = magnitude)
+    }
+    y_tics <- sapply(y_tics_levels, round_to_nearest)
+    y_tics[1] <- plot_y_lower_bound
   }
-  y_tics <- sapply(y_tics_levels, round_to_nearest)
-  y_tics[1] <- y_lower_bound
   levels_df$ymax[length(levels_df$ymax)] <- dplyr::last(y_tics)
+
+  y_axis_scale <- if (is_proportion) {
+    ggplot2::scale_y_continuous(
+      expand = ggplot2::expansion(mult = 0, add = 0),
+      breaks = y_tics,
+      limits = range(y_tics),
+      labels = y_scale_labels
+    )
+  } else {
+    ggplot2::scale_y_log10(
+      expand = ggplot2::expansion(mult = 0, add = 0),
+      breaks = y_tics,
+      limits = range(y_tics),
+      labels = y_scale_labels
+    )
+  }
 
   # Plot
   virus_df |>
     ggplot2::ggplot(ggplot2::aes(x = .data$reference_time,
-                                 y = pmax(.data[[obs_name]], y_lower_bound))) +
+                                 y = if (is_proportion) {
+                                   .data[[obs_name]]
+                                 } else {
+                                   pmax(.data[[obs_name]], plot_y_lower_bound)
+                                 })) +
     theme_custom +
     ggplot2::geom_rect(
       data = levels_df,
@@ -415,7 +447,11 @@ autoplot.tsd_onset_and_burden <- function(
       data = levels_df,
       ggplot2::aes(
         x = min(virus_df$reference_time) + 15,
-        y = sqrt(.data$ymax * .data$ymin),
+        y = if (is_proportion) {
+          (.data$ymax + .data$ymin) / 2
+        } else {
+          sqrt(.data$ymax * .data$ymin)
+        },
         label = .data$level
       ),
       hjust = 0,
@@ -429,12 +465,7 @@ autoplot.tsd_onset_and_burden <- function(
       ggplot2::aes(group = 1, linetype = y_label),
       color = line_color
     ) +
-    ggplot2::scale_y_log10(
-      expand = ggplot2::expansion(mult = 0, add = 0),
-      breaks = y_tics,
-      limits = range(y_tics),
-      labels = y_scale_labels
-    ) +
+    y_axis_scale +
     ggplot2::scale_linetype_manual(
       name = "",
       values = stats::setNames(line_type, y_label)
@@ -559,6 +590,18 @@ autoplot.tsd_growth_warning <- function(
     levels = sort(unique(object$season), decreasing = FALSE, method = "auto")
   )
 
+  x_axis_scale <- if (identical(obs_name, "proportion")) {
+    ggplot2::scale_x_continuous(
+      breaks = scales::breaks_extended(n = 10),
+      labels = scales::label_number()
+    )
+  } else {
+    ggplot2::scale_x_log10(
+      breaks = scales::log_breaks(base = 10, n = 10),
+      labels = scales::label_comma()
+    )
+  }
+
   object |>
     dplyr::filter(!is.na(.data$significant_counter)) |>
     ggplot2::ggplot(mapping = ggplot2::aes(x = .data$average_observations_window)) +
@@ -575,10 +618,7 @@ autoplot.tsd_growth_warning <- function(
       breaks = unique(object$season),
       labels = unique(object$season)
     ) +
-    ggplot2::scale_x_log10(
-      breaks = scales::log_breaks(base = 10, n = 10),
-      labels = scales::label_comma()
-    ) +
+    x_axis_scale +
     ggplot2::scale_y_continuous(
       breaks = scales::breaks_extended(breaks_y_axis)
     ) +
