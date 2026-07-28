@@ -21,7 +21,7 @@ This is mandatory for binomial models}
 
 \item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate
 modeling. Choose between 'poisson', 'quasipoisson', 'binomial', or 'quasibinomial'. Use 'binomial'
-or 'quasibinomial' for binomial data supplied as \code{successes} and \code{trials}.}
+or 'quasibinomial' for binomial data supplied as \code{cases} and \code{samples}.}
 }
 \value{
 A list containing:

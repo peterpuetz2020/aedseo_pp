@@ -313,7 +313,7 @@ autoplot.tsd_onset_and_burden <- function(
   vline_color_offset = "#006f3c",
   vline_linetype_offset = "dotted",
   line_width = 1,
-  y_scale_labels = scales::label_comma(big.mark = ".", decimal.mark = ","),
+  y_scale_labels = scales::label_comma(),
   theme_custom = ggplot2::theme_bw(),
   legend_position = "right",
   ...
@@ -342,10 +342,11 @@ autoplot.tsd_onset_and_burden <- function(
   # Use proportions for binomial data, incidence when available, or cases otherwise
   obs_name <- "cases"
   y_label <- "Cases"
-  if (identical(attr(object$burden_output, "burden_outcome"), "proportion")) {
+  burden_outcome <- attr(object$burden_output, "burden_outcome")
+  if (identical(burden_outcome, "proportion")) {
     obs_name <- "proportion"
     y_label <- "Proportion"
-  } else if (!is.na(attr(object$burden_output, "incidence_denominator"))) {
+  } else if (identical(burden_outcome, "incidence")) {
     obs_name <- "incidence"
     y_label <- "Incidence"
   }

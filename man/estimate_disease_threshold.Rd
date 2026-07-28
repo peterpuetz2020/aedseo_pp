@@ -54,7 +54,7 @@ Specify one or three confidence levels e.g.: \code{c(0.25)} \code{c(0.25, 0.5, 0
 
 \item{family}{A character string, family-generator, or family object specifying the distribution family for growth-rate
 modeling. Choose between 'poisson', 'quasipoisson', 'binomial', or 'quasibinomial'. Use 'binomial'
-or 'quasibinomial' for binomial data supplied as \code{successes} and \code{trials}.  Passed to \code{seasonal_onset()} and then to \code{fit_growth_rate()}.}
+or 'quasibinomial' for binomial data supplied as \code{cases} and \code{samples}.  Passed to \code{seasonal_onset()} and then to \code{fit_growth_rate()}.}
 
 \item{burden_family}{A character string specifying the family for modeling burden levels. Choose between 'lnorm', 'weibull', 'exp', or 'beta'. Use 'beta' for proportional/binomial data. If \code{NULL}, defaults to 'beta' for proportional data and 'lnorm' otherwise. Proportional data must use 'beta'; non-proportional data cannot use 'beta'. Passed to \code{fit_percentiles()} as its \code{family} argument.}
 

@@ -51,7 +51,7 @@ autoplot(object, ...)
   vline_color_offset = "#006f3c",
   vline_linetype_offset = "dotted",
   line_width = 1,
-  y_scale_labels = scales::label_comma(big.mark = ".", decimal.mark = ","),
+  y_scale_labels = scales::label_comma(),
   theme_custom = ggplot2::theme_bw(),
   legend_position = "right",
   ...

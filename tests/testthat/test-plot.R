@@ -90,13 +90,17 @@ test_that("Test that plot works for cases and incidence for tsd, tsd_onset, tsd_
   combined_proportion <- combined_seasonal_output(
     tsd_data_proportion,
     disease_threshold = 0.1,
-    family = "quasibinomial",
-    family_quant = "beta"
+    family = "quasibinomial"
   )
 
   proportion_plot_3 <- autoplot(combined_proportion, y_lower_bound = 0.01)
 
   expect_equal(proportion_plot_3$labels$y, "Proportion")
+  expect_equal(attr(combined_proportion$burden_output, "burden_outcome"), "proportion")
+  expect_false(all(is.na(proportion_plot_3$data$proportion)))
+  expect_true(any(vapply(proportion_plot_3$layers, \(layer) inherits(layer$geom, "GeomLine"), logical(1))))
+  y_labels <- proportion_plot_3$scales$get_scales("y")$labels(c(0.01, 0.1))
+  expect_equal(y_labels, c("0.01", "0.10"))
   expect_silent(ggplot2::ggplot_build(proportion_plot_3))
 })
 

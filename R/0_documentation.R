@@ -20,7 +20,7 @@ rd_disease_threshold <- function(usage = NULL) {
 rd_family <- function(usage = NULL) {
   paste("A character string, family-generator, or family object specifying the distribution family for growth-rate
         modeling. Choose between 'poisson', 'quasipoisson', 'binomial', or 'quasibinomial'. Use 'binomial'
-        or 'quasibinomial' for binomial data supplied as `successes` and `trials`.",
+        or 'quasibinomial' for binomial data supplied as `cases` and `samples`.",
         if (identical(usage, "combined")) " This is passed to 'seasonal_onset()'." else "")
 }
 rd_burden_level_family <- paste(
@@ -33,7 +33,7 @@ rd_burden_level_family <- paste(
 rd_only_current_season <- "Should the output only include results for the current season?"
 rd_population <- paste(
   "An integer vector containing the time series background population.",
-  "For binomial data, use `trials` instead."
+  "For binomial data, use `samples` instead."
 )
 rd_season_start_end <- function(usage = NULL) {
   paste("Integers giving the start and end weeks of the seasons to
